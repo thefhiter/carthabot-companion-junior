@@ -1,0 +1,977 @@
+<UserControl x:Class="CarthaBotVPL.Views.VplView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CarthaBotVPL.ViewModels"
+             xmlns:controls="clr-namespace:CompanionApp.Controls"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+        <!-- converters -->
+        <vm:StringToBrushConverter x:Key="StringToBrush" />
+        <vm:StringToColorConverter x:Key="StringToColor" />
+        <vm:InverseBoolToVisibilityConverter x:Key="InverseBoolVis" />
+        <vm:BoolToVisibilityConverter x:Key="BoolVis" />
+        <vm:EnumToBoolConverter x:Key="EnumBool" />
+
+        <!-- ===== THEME BRUSHES (dark defaults; swapped at runtime by the theme toggle) ===== -->
+        <SolidColorBrush x:Key="VplBg" Color="#192428" />
+        <SolidColorBrush x:Key="VplToolbar" Color="#2D383C" />
+        <SolidColorBrush x:Key="VplPanel" Color="#22313A" />
+        <SolidColorBrush x:Key="VplCard" Color="#22313A" />
+        <SolidColorBrush x:Key="VplLine" Color="#33454F" />
+        <SolidColorBrush x:Key="VplText" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="VplTextDim" Color="#9FB0B7" />
+        <SolidColorBrush x:Key="VplChip" Color="#3A4A52" />
+        <SolidColorBrush x:Key="VplDashed" Color="#51636C" />
+        <SolidColorBrush x:Key="VplConnector" Color="#6B7980" />
+        <SolidColorBrush x:Key="VplHover" Color="#22FFFFFF" />
+        <SolidColorBrush x:Key="VplEventCardBg" Color="#2A2018" />
+        <SolidColorBrush x:Key="VplActionCardBg" Color="#1C2A30" />
+
+        <!-- ===== ACCENTS (theme independent) ===== -->
+        <SolidColorBrush x:Key="Cyan" Color="#2BC0E8" />
+        <SolidColorBrush x:Key="EventOrange" Color="#EE7B2F" />
+        <SolidColorBrush x:Key="ActionBlue" Color="#2D9CDB" />
+        <SolidColorBrush x:Key="Green" Color="#37D67A" />
+        <SolidColorBrush x:Key="Red" Color="#EB5757" />
+        <SolidColorBrush x:Key="Yellow" Color="#F2C94C" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource VplText}" />
+        </Style>
+
+        <!-- flat toolbar button -->
+        <Style x:Key="ToolButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{DynamicResource VplText}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="42" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Margin" Value="2 0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource VplHover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- big round play / stop / connect -->
+        <Style x:Key="RoundButton" TargetType="Button">
+            <Setter Property="Width" Value="50" />
+            <Setter Property="Height" Value="50" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="4 0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse x:Name="e" Fill="{TemplateBinding Background}">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#60000000" />
+                                </Ellipse.Effect>
+                            </Ellipse>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="e" Property="Opacity" Value="0.85" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- palette tile (icon-only, hover zoom) -->
+        <Style x:Key="PaletteTile" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="0 6" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform">
+                <Setter.Value><ScaleTransform ScaleX="1" ScaleY="1" /></Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button"><ContentPresenter /></ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1.07" Duration="0:0:0.15" />
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1.07" Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.2" />
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- choice tiles (radio) -->
+        <Style x:Key="EventChoiceTile" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="b" MinWidth="30" MinHeight="30" Padding="6 0" CornerRadius="8" Background="{DynamicResource VplChip}" TextElement.Foreground="{DynamicResource VplText}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Opacity" Value="0.8" /></Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource EventOrange}" />
+                                <Setter TargetName="b" Property="TextElement.Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ActionChoiceTile" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="b" MinWidth="30" MinHeight="30" Padding="6 0" CornerRadius="8" Background="{DynamicResource VplChip}" TextElement.Foreground="{DynamicResource VplText}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Opacity" Value="0.8" /></Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{StaticResource ActionBlue}" />
+                                <Setter TargetName="b" Property="TextElement.Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== TUNE EDITOR CELLS (6 columns × 5 pentatonic pitches; one colour per pitch row) ===== -->
+        <Style x:Key="NoteCellBase" TargetType="Button">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="13" />
+            <Setter Property="Margin" Value="0 1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource VplChip}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Opacity" Value="0.75" /></Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="NoteCell4" TargetType="Button" BasedOn="{StaticResource NoteCellBase}">
+            <Style.Triggers><DataTrigger Binding="{Binding Pitch}" Value="4"><Setter Property="Background" Value="#F2C94C" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="NoteCell3" TargetType="Button" BasedOn="{StaticResource NoteCellBase}">
+            <Style.Triggers><DataTrigger Binding="{Binding Pitch}" Value="3"><Setter Property="Background" Value="#37D67A" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="NoteCell2" TargetType="Button" BasedOn="{StaticResource NoteCellBase}">
+            <Style.Triggers><DataTrigger Binding="{Binding Pitch}" Value="2"><Setter Property="Background" Value="#2BC0E8" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="NoteCell1" TargetType="Button" BasedOn="{StaticResource NoteCellBase}">
+            <Style.Triggers><DataTrigger Binding="{Binding Pitch}" Value="1"><Setter Property="Background" Value="#2D9CDB" /></DataTrigger></Style.Triggers>
+        </Style>
+        <Style x:Key="NoteCell0" TargetType="Button" BasedOn="{StaticResource NoteCellBase}">
+            <Style.Triggers><DataTrigger Binding="{Binding Pitch}" Value="0"><Setter Property="Background" Value="#EB5757" /></DataTrigger></Style.Triggers>
+        </Style>
+
+        <!-- one column of the tune editor: top = high pitch -->
+        <DataTemplate x:Key="NoteColumn">
+            <StackPanel Margin="2 0">
+                <Button Style="{StaticResource NoteCell4}" Command="{Binding Toggle}" CommandParameter="4" Click="OnNoteCell" Tag="4" />
+                <Button Style="{StaticResource NoteCell3}" Command="{Binding Toggle}" CommandParameter="3" Click="OnNoteCell" Tag="3" />
+                <Button Style="{StaticResource NoteCell2}" Command="{Binding Toggle}" CommandParameter="2" Click="OnNoteCell" Tag="2" />
+                <Button Style="{StaticResource NoteCell1}" Command="{Binding Toggle}" CommandParameter="1" Click="OnNoteCell" Tag="1" />
+                <Button Style="{StaticResource NoteCell0}" Command="{Binding Toggle}" CommandParameter="0" Click="OnNoteCell" Tag="0" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ===== EVENT CONFIGURATOR ===== -->
+        <DataTemplate x:Key="EventConfig">
+            <StackPanel>
+            <Grid>
+                <!-- button pad -->
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Button"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <RadioButton Grid.Row="0" Grid.Column="1" Style="{StaticResource EventChoiceTile}" Content="▲" Foreground="White" FontSize="13" IsChecked="{Binding Button, Converter={StaticResource EnumBool}, ConverterParameter=Up}" />
+                    <RadioButton Grid.Row="1" Grid.Column="0" Style="{StaticResource EventChoiceTile}" Content="◀" Foreground="White" FontSize="13" IsChecked="{Binding Button, Converter={StaticResource EnumBool}, ConverterParameter=Left}" />
+                    <RadioButton Grid.Row="1" Grid.Column="1" Style="{StaticResource EventChoiceTile}" Content="●" Foreground="White" FontSize="12" IsChecked="{Binding Button, Converter={StaticResource EnumBool}, ConverterParameter=Center}" />
+                    <RadioButton Grid.Row="1" Grid.Column="2" Style="{StaticResource EventChoiceTile}" Content="▶" Foreground="White" FontSize="13" IsChecked="{Binding Button, Converter={StaticResource EnumBool}, ConverterParameter=Right}" />
+                    <RadioButton Grid.Row="2" Grid.Column="1" Style="{StaticResource EventChoiceTile}" Content="▼" Foreground="White" FontSize="13" IsChecked="{Binding Button, Converter={StaticResource EnumBool}, ConverterParameter=Down}" />
+                </Grid>
+                <!-- sensor detected/clear -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Kind}" Value="Obstacle"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                <DataTrigger Binding="{Binding Kind}" Value="Line"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <RadioButton Style="{StaticResource EventChoiceTile}" Width="72" Content="{DynamicResource vplDetected}" Foreground="White" FontSize="11" IsChecked="{Binding Detected, Converter={StaticResource EnumBool}, ConverterParameter=True}" />
+                    <RadioButton Style="{StaticResource EventChoiceTile}" Width="56" Content="{DynamicResource vplClearState}" Foreground="White" FontSize="11" IsChecked="{Binding Detected, Converter={StaticResource EnumBool}, ConverterParameter=False}" />
+                </StackPanel>
+                <!-- start -->
+                <TextBlock Text="{DynamicResource vplStartWhen}" Foreground="{DynamicResource VplText}" FontSize="13" FontWeight="DemiBold" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="130">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Start"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <!-- timer elapsed -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Timer"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="⏰" FontSize="22" VerticalAlignment="Center" Margin="0 0 8 0" />
+                    <TextBlock Text="{DynamicResource vplTimerWhen}" Foreground="{DynamicResource VplText}" FontSize="13" FontWeight="DemiBold" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="110" />
+                </StackPanel>
+            </Grid>
+
+            <!-- advanced mode: only react in this memory state (★ ♥ ● ■) -->
+            <StackPanel Margin="0 8 0 0" HorizontalAlignment="Center"
+                        Visibility="{Binding DataContext.AdvancedMode, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolVis}}">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Start"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Text="{DynamicResource vplOnlyWhen}" Foreground="{DynamicResource VplTextDim}" FontSize="10" HorizontalAlignment="Center" Margin="0 0 0 2" />
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Style="{StaticResource EventChoiceTile}" Width="30" Content="∗" FontSize="14" Foreground="White" ToolTip="{DynamicResource vplAnyState}" IsChecked="{Binding StateFilter, Converter={StaticResource EnumBool}, ConverterParameter=-1}" />
+                    <RadioButton Style="{StaticResource EventChoiceTile}" Width="30" Content="★" FontSize="13" Foreground="#F2C94C" IsChecked="{Binding StateFilter, Converter={StaticResource EnumBool}, ConverterParameter=0}" />
+                    <RadioButton Style="{StaticResource EventChoiceTile}" Width="30" Content="♥" FontSize="13" Foreground="#EB5757" IsChecked="{Binding StateFilter, Converter={StaticResource EnumBool}, ConverterParameter=1}" />
+                    <RadioButton Style="{StaticResource EventChoiceTile}" Width="30" Content="●" FontSize="12" Foreground="#2D9CDB" IsChecked="{Binding StateFilter, Converter={StaticResource EnumBool}, ConverterParameter=2}" />
+                    <RadioButton Style="{StaticResource EventChoiceTile}" Width="30" Content="■" FontSize="12" Foreground="#37D67A" IsChecked="{Binding StateFilter, Converter={StaticResource EnumBool}, ConverterParameter=3}" />
+                </StackPanel>
+            </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ===== ACTION CONFIGURATOR (one blue card) ===== -->
+        <DataTemplate x:Key="ActionConfig">
+            <Border Background="{DynamicResource VplActionCardBg}" CornerRadius="10" Margin="4" Padding="8" BorderBrush="{StaticResource ActionBlue}" BorderThickness="1"
+                    Opacity="0" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform><ScaleTransform ScaleX="0.85" ScaleY="0.85" /></Border.RenderTransform>
+                <Border.Triggers>
+                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25" />
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.3">
+                                    <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.6" /></DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.3">
+                                    <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.6" /></DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Border.Triggers>
+                <StackPanel>
+                    <Grid>
+                        <TextBlock FontSize="11" FontWeight="DemiBold" Foreground="{StaticResource ActionBlue}" HorizontalAlignment="Left">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"><Setter Property="Text" Value="{DynamicResource vplHdrMove}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Color"><Setter Property="Text" Value="{DynamicResource vplHdrColor}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Sound"><Setter Property="Text" Value="{DynamicResource vplHdrSound}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Wait"><Setter Property="Text" Value="{DynamicResource vplHdrWait}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Anim"><Setter Property="Text" Value="{DynamicResource vplHdrAnim}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Timer"><Setter Property="Text" Value="{DynamicResource vplHdrTimer}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="State"><Setter Property="Text" Value="{DynamicResource vplHdrState}" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Button Content="✕" FontSize="11" Foreground="{DynamicResource VplTextDim}" Background="Transparent" BorderThickness="0" Cursor="Hand" HorizontalAlignment="Right" Padding="4 0"
+                                Command="{Binding DataContext.RemoveActionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                    </Grid>
+                    <!-- move -->
+                    <StackPanel Margin="0 4 0 0">
+                        <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Move"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                        <!-- live 3D CarthaBot showing the chosen move direction -->
+                        <Border Width="128" Height="86" CornerRadius="8" Background="#14000000" Margin="0 0 0 4" HorizontalAlignment="Center" ClipToBounds="True">
+                            <controls:MiniBot3D Mode="Move" Direction="{Binding Move}" />
+                        </Border>
+                        <Grid HorizontalAlignment="Center">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <RadioButton Grid.Row="0" Grid.Column="1" Style="{StaticResource ActionChoiceTile}" Content="▲" Foreground="White" FontSize="13" IsChecked="{Binding Move, Converter={StaticResource EnumBool}, ConverterParameter=Forward}" />
+                            <RadioButton Grid.Row="1" Grid.Column="0" Style="{StaticResource ActionChoiceTile}" Content="◀" Foreground="White" FontSize="13" IsChecked="{Binding Move, Converter={StaticResource EnumBool}, ConverterParameter=Left}" />
+                            <RadioButton Grid.Row="1" Grid.Column="1" Style="{StaticResource ActionChoiceTile}" Content="■" Foreground="White" FontSize="11" IsChecked="{Binding Move, Converter={StaticResource EnumBool}, ConverterParameter=Stop}" />
+                            <RadioButton Grid.Row="1" Grid.Column="2" Style="{StaticResource ActionChoiceTile}" Content="▶" Foreground="White" FontSize="13" IsChecked="{Binding Move, Converter={StaticResource EnumBool}, ConverterParameter=Right}" />
+                            <RadioButton Grid.Row="2" Grid.Column="1" Style="{StaticResource ActionChoiceTile}" Content="▼" Foreground="White" FontSize="13" IsChecked="{Binding Move, Converter={StaticResource EnumBool}, ConverterParameter=Backward}" />
+                        </Grid>
+                        <!-- one-block line follower: drive along the black line with the ground sensor -->
+                        <RadioButton Style="{StaticResource ActionChoiceTile}" Width="150" Margin="2 5 2 0" HorizontalAlignment="Center"
+                                     Content="{DynamicResource vplMoveFollow}" Foreground="White" FontSize="10.5"
+                                     IsChecked="{Binding Move, Converter={StaticResource EnumBool}, ConverterParameter=FollowLine}" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 4 0 0">
+                            <TextBlock Text="{DynamicResource vplSpeed}" Foreground="{DynamicResource VplTextDim}" FontSize="11" VerticalAlignment="Center" Margin="0 0 6 0" />
+                            <Slider Width="84" Minimum="0" Maximum="255" Value="{Binding Speed}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Speed}" Foreground="{DynamicResource VplText}" FontSize="11" Width="28" TextAlignment="Right" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                    <!-- colour -->
+                    <StackPanel Margin="0 4 0 0">
+                        <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Color"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                        <!-- live 3D CarthaBot glowing the chosen LED colour -->
+                        <Border Width="128" Height="86" CornerRadius="8" Background="#14000000" Margin="0 0 0 6" HorizontalAlignment="Center" ClipToBounds="True">
+                            <controls:MiniBot3D Mode="Glow" GlowColor="{Binding ColorHex, Converter={StaticResource StringToColor}}" />
+                        </Border>
+                        <Border Height="22" CornerRadius="6" Background="{Binding ColorHex, Converter={StaticResource StringToBrush}}" Margin="0 0 0 6" />
+                        <WrapPanel Width="150">
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#FF0000" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="255,0,0" />
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#00C800" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="0,200,0" />
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#0050FF" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="0,80,255" />
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#FFD800" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="255,216,0" />
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#00E0FF" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="0,224,255" />
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#FF00C8" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="255,0,200" />
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#FFFFFF" BorderThickness="1" BorderBrush="#999" Command="{Binding PickColor}" CommandParameter="255,255,255" />
+                            <Button Width="26" Height="26" Margin="2" Cursor="Hand" Background="#202020" BorderThickness="1" BorderBrush="#555" Command="{Binding PickColor}" CommandParameter="0,0,0" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <!-- sound -->
+                    <StackPanel Margin="0 4 0 0">
+                        <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Sound"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                        <WrapPanel Width="160" HorizontalAlignment="Center">
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="46" Content="{DynamicResource vplSoundBeep}" Foreground="White" FontSize="10" Tag="Beep" Click="OnPreviewSound" IsChecked="{Binding Sound, Converter={StaticResource EnumBool}, ConverterParameter=Beep}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="46" Content="{DynamicResource vplSoundHappy}" Foreground="White" FontSize="10" Tag="Happy" Click="OnPreviewSound" IsChecked="{Binding Sound, Converter={StaticResource EnumBool}, ConverterParameter=Happy}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="46" Content="{DynamicResource vplSoundSad}" Foreground="White" FontSize="10" Tag="Sad" Click="OnPreviewSound" IsChecked="{Binding Sound, Converter={StaticResource EnumBool}, ConverterParameter=Sad}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="46" Content="{DynamicResource vplSoundSiren}" Foreground="White" FontSize="10" Tag="Siren" Click="OnPreviewSound" IsChecked="{Binding Sound, Converter={StaticResource EnumBool}, ConverterParameter=Siren}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="94" Content="{DynamicResource vplSoundMyTune}" Foreground="White" FontSize="10" IsChecked="{Binding Sound, Converter={StaticResource EnumBool}, ConverterParameter=Custom}" />
+                        </WrapPanel>
+                        <!-- the child's own 6-note tune (pentatonic grid: tap a cell, tap again to clear) -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0 6 0 0">
+                            <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Sound}" Value="Custom"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                            <Border Background="#14000000" CornerRadius="8" Padding="7 5">
+                                <ItemsControl ItemsSource="{Binding Notes}" ItemTemplate="{StaticResource NoteColumn}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </Border>
+                            <Button Margin="0 5 0 0" Padding="10 3" HorizontalAlignment="Center" Cursor="Hand" Foreground="White" Background="{StaticResource ActionBlue}" BorderThickness="0" Click="OnPreviewTune">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="▶" FontSize="10" Margin="0 1 5 0" />
+                                    <TextBlock Text="{DynamicResource vplPlayTune}" FontSize="10" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                    <!-- LED ring animation -->
+                    <StackPanel Margin="0 4 0 0">
+                        <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Anim"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                        <!-- live 3D CarthaBot glowing the animation colour -->
+                        <Border Width="128" Height="86" CornerRadius="8" Background="#14000000" Margin="0 0 0 6" HorizontalAlignment="Center" ClipToBounds="True">
+                            <controls:MiniBot3D Mode="Glow" GlowColor="{Binding ColorHex, Converter={StaticResource StringToColor}}" />
+                        </Border>
+                        <WrapPanel Width="160" HorizontalAlignment="Center">
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="74" Content="{DynamicResource vplAnimRainbow}" Foreground="White" FontSize="10" IsChecked="{Binding Anim, Converter={StaticResource EnumBool}, ConverterParameter=Rainbow}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="74" Content="{DynamicResource vplAnimBlink}" Foreground="White" FontSize="10" IsChecked="{Binding Anim, Converter={StaticResource EnumBool}, ConverterParameter=Blink}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="74" Content="{DynamicResource vplAnimChase}" Foreground="White" FontSize="10" IsChecked="{Binding Anim, Converter={StaticResource EnumBool}, ConverterParameter=Chase}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="74" Content="{DynamicResource vplAnimBreathe}" Foreground="White" FontSize="10" IsChecked="{Binding Anim, Converter={StaticResource EnumBool}, ConverterParameter=Breathe}" />
+                        </WrapPanel>
+                        <!-- animation colour (rainbow picks its own colours) -->
+                        <WrapPanel Width="160" HorizontalAlignment="Center" Margin="0 5 0 0">
+                            <WrapPanel.Style><Style TargetType="WrapPanel"><Style.Triggers><DataTrigger Binding="{Binding Anim}" Value="Rainbow"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></WrapPanel.Style>
+                            <Button Width="22" Height="22" Margin="2" Cursor="Hand" Background="#FF0000" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="255,0,0" />
+                            <Button Width="22" Height="22" Margin="2" Cursor="Hand" Background="#00C800" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="0,200,0" />
+                            <Button Width="22" Height="22" Margin="2" Cursor="Hand" Background="#0050FF" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="0,80,255" />
+                            <Button Width="22" Height="22" Margin="2" Cursor="Hand" Background="#FFD800" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="255,216,0" />
+                            <Button Width="22" Height="22" Margin="2" Cursor="Hand" Background="#00E0FF" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="0,224,255" />
+                            <Button Width="22" Height="22" Margin="2" Cursor="Hand" Background="#FF00C8" BorderThickness="0" Command="{Binding PickColor}" CommandParameter="255,0,200" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <!-- start timer -->
+                    <StackPanel Margin="0 4 0 0">
+                        <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Timer"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="⏰" FontSize="17" VerticalAlignment="Center" Margin="0 0 6 0" />
+                            <Slider Width="84" Minimum="0.5" Maximum="4" Value="{Binding Seconds}" VerticalAlignment="Center" TickFrequency="0.5" IsSnapToTickEnabled="True" />
+                            <TextBlock Text="{Binding Seconds, StringFormat={}{0:0.0}s}" Foreground="{DynamicResource VplText}" FontSize="11" Width="34" TextAlignment="Right" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{DynamicResource vplTimerSecs}" Foreground="{DynamicResource VplTextDim}" FontSize="11" HorizontalAlignment="Center" Margin="0 2 0 0" />
+                    </StackPanel>
+                    <!-- remember a state (★ ♥ ● ■) -->
+                    <StackPanel Margin="0 4 0 0">
+                        <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="State"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="34" Content="★" FontSize="16" Foreground="#F2C94C" IsChecked="{Binding StateValue, Converter={StaticResource EnumBool}, ConverterParameter=0}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="34" Content="♥" FontSize="16" Foreground="#EB5757" IsChecked="{Binding StateValue, Converter={StaticResource EnumBool}, ConverterParameter=1}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="34" Content="●" FontSize="14" Foreground="#2D9CDB" IsChecked="{Binding StateValue, Converter={StaticResource EnumBool}, ConverterParameter=2}" />
+                            <RadioButton Style="{StaticResource ActionChoiceTile}" Width="34" Content="■" FontSize="14" Foreground="#37D67A" IsChecked="{Binding StateValue, Converter={StaticResource EnumBool}, ConverterParameter=3}" />
+                        </StackPanel>
+                        <TextBlock Text="{DynamicResource vplStateHint}" Foreground="{DynamicResource VplTextDim}" FontSize="10" HorizontalAlignment="Center" Margin="0 4 0 0" TextWrapping="Wrap" MaxWidth="150" TextAlignment="Center" />
+                    </StackPanel>
+                    <!-- wait -->
+                    <StackPanel Margin="0 4 0 0">
+                        <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="Wait"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="⏱" FontSize="17" VerticalAlignment="Center" Margin="0 0 6 0" />
+                            <Slider Width="84" Minimum="0.2" Maximum="5" Value="{Binding Seconds}" VerticalAlignment="Center" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+                            <TextBlock Text="{Binding Seconds, StringFormat={}{0:0.0}s}" Foreground="{DynamicResource VplText}" FontSize="11" Width="34" TextAlignment="Right" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{DynamicResource vplWaitSecs}" Foreground="{DynamicResource VplTextDim}" FontSize="11" HorizontalAlignment="Center" Margin="0 2 0 0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ===== RULE ROW ===== -->
+        <DataTemplate x:Key="RuleRow">
+            <Border Margin="0 6" CornerRadius="12" Background="{DynamicResource VplCard}" BorderThickness="2" Opacity="0" RenderTransformOrigin="0.5,0.5"
+                    MouseLeftButtonDown="Rule_Click">
+                <Border.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform ScaleX="0.97" ScaleY="0.97" />
+                        <TranslateTransform Y="22" />
+                    </TransformGroup>
+                </Border.RenderTransform>
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush" Value="{DynamicResource VplLine}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter Property="BorderBrush" Value="{StaticResource Cyan}" /></DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Border.Triggers>
+                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.3" />
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)" To="0" Duration="0:0:0.3">
+                                    <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.3" />
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.3" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Border.Triggers>
+                <Grid Margin="12 10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- EVENT card -->
+                    <Border Grid.Column="0" CornerRadius="10" Background="{DynamicResource VplEventCardBg}" BorderBrush="{StaticResource EventOrange}" BorderThickness="1" Padding="10" MinWidth="150" VerticalAlignment="Center">
+                        <StackPanel>
+                            <TextBlock FontSize="11" FontWeight="DemiBold" Foreground="{StaticResource EventOrange}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"><Setter Property="Text" Value="{DynamicResource vplHdrButton}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Event.Kind}" Value="Obstacle"><Setter Property="Text" Value="{DynamicResource vplHdrObstacle}" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding Event.Kind}" Value="Line"><Setter Property="Text" Value="{DynamicResource vplHdrLine}" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding Event.Kind}" Value="Start"><Setter Property="Text" Value="{DynamicResource vplHdrStart}" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding Event.Kind}" Value="Timer"><Setter Property="Text" Value="{DynamicResource vplHdrTimerEvt}" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ContentControl Content="{Binding Event}" ContentTemplate="{StaticResource EventConfig}" Margin="0 6 0 0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- dotted connector -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8 0">
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource VplConnector}" Margin="2 0" />
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource VplConnector}" Margin="2 0" />
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource VplConnector}" Margin="2 0" />
+                    </StackPanel>
+
+                    <!-- ACTION cards -->
+                    <ItemsControl Grid.Column="2" ItemsSource="{Binding Actions}" ItemTemplate="{StaticResource ActionConfig}" VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <!-- dashed "add action" drop slot -->
+                    <Button Grid.Column="3" Style="{StaticResource ToolButton}" Width="78" Height="74" HorizontalAlignment="Left" Margin="4 0"
+                            Command="{Binding DataContext.SelectRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                            ToolTip="{DynamicResource vplAddAction}">
+                        <Border CornerRadius="10" Width="78" Height="74">
+                            <Border.Background><SolidColorBrush Color="Transparent" /></Border.Background>
+                            <Grid>
+                                <Rectangle RadiusX="10" RadiusY="10" Stroke="{DynamicResource VplDashed}" StrokeThickness="2" StrokeDashArray="3 3" Fill="Transparent" />
+                                <TextBlock Text="+" FontSize="26" Foreground="{DynamicResource VplDashed}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </Button>
+
+                    <!-- faint index -->
+                    <TextBlock Grid.Column="4" Text="{Binding Index}" Foreground="{DynamicResource VplTextDim}" Opacity="0.5" FontSize="30" FontWeight="Bold" VerticalAlignment="Center" Margin="6 0 10 0" />
+
+                    <!-- delete row -->
+                    <Button Grid.Column="5" Content="✕" FontSize="13" Width="28" Height="28" VerticalAlignment="Top" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource VplTextDim}" Cursor="Hand"
+                            Command="{Binding DataContext.RemoveRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <!-- ================= LAYOUT ================= -->
+    <Border Background="{DynamicResource VplBg}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="26" />
+            </Grid.RowDefinitions>
+
+            <!-- TOOLBAR -->
+            <Border Grid.Row="0" Background="{DynamicResource VplToolbar}" BorderBrush="{DynamicResource VplLine}" BorderThickness="0 0 0 1">
+                <Grid Margin="12 0">
+                    <!-- left: files + compile status -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding NewCommand}" ToolTip="{DynamicResource vplTipNew}"><TextBlock Text="🖹" FontSize="19" Foreground="{StaticResource ActionBlue}" /></Button>
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding OpenCommand}" ToolTip="{DynamicResource vplTipOpen}"><TextBlock Text="📂" FontSize="17" Foreground="{StaticResource ActionBlue}" /></Button>
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding SaveCommand}" ToolTip="{DynamicResource vplTipSave}"><TextBlock Text="💾" FontSize="17" Foreground="{StaticResource ActionBlue}" /></Button>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12 0 0 0" Visibility="{Binding CompiledOk, Converter={StaticResource BoolVis}}">
+                            <Ellipse Width="16" Height="16" Fill="{StaticResource Green}" VerticalAlignment="Center" />
+                            <TextBlock Text="✓" Foreground="White" FontSize="11" FontWeight="Bold" Margin="-13 0 0 0" VerticalAlignment="Center" Width="13" TextAlignment="Center" />
+                            <TextBlock Text="{DynamicResource vplCompiledOk}" Foreground="{StaticResource Green}" FontSize="13" VerticalAlignment="Center" Margin="6 0 0 0" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- centre: transport -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding UndoCommand}" ToolTip="{DynamicResource vplTipUndo}"><TextBlock Text="↶" FontSize="21" /></Button>
+                        <Button x:Name="PlayBtn" Style="{StaticResource RoundButton}" Background="{StaticResource Green}" Command="{Binding PlayCommand}" Click="OnPlaySim" ToolTip="{DynamicResource vplTipRun}" RenderTransformOrigin="0.5,0.5">
+                            <Button.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1" /></Button.RenderTransform>
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="1" To="1.07" Duration="0:0:0.9" AutoReverse="True" RepeatBehavior="Forever" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="1" To="1.07" Duration="0:0:0.9" AutoReverse="True" RepeatBehavior="Forever" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="▶" FontSize="19" Margin="3 0 0 0" />
+                        </Button>
+                        <Button x:Name="StopBtn" Style="{StaticResource RoundButton}" Background="{StaticResource Red}" Command="{Binding StopCommand}" Click="OnStopSim" ToolTip="{DynamicResource vplTipStop}"><TextBlock Text="■" FontSize="17" /></Button>
+                        <!-- Live: run on the real robot AND mirror it in the 3D twin -->
+                        <Button x:Name="LiveBtn" Style="{StaticResource RoundButton}" Width="44" Height="44" Background="#C0392B" Command="{Binding PlayLiveCommand}" Click="OnPlayLive" ToolTip="{DynamicResource vplTipLive}"><TextBlock Text="📡" FontSize="17" /></Button>
+                        <Button Style="{StaticResource RoundButton}" Width="44" Height="44" Background="{StaticResource Cyan}" Command="{Binding ConnectCommand}" ToolTip="{DynamicResource vplTipConnect}"><TextBlock Text="⟲" FontSize="20" /></Button>
+                    </StackPanel>
+
+                    <!-- right: connection + actions -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Ellipse Width="11" Height="11" VerticalAlignment="Center" Margin="0 0 7 0">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse"><Setter Property="Fill" Value="{StaticResource Red}" />
+                                    <Style.Triggers><DataTrigger Binding="{Binding IsConnected}" Value="True"><Setter Property="Fill" Value="{StaticResource Green}" /></DataTrigger></Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock VerticalAlignment="Center" FontSize="12.5" Foreground="{DynamicResource VplTextDim}" Margin="0 0 8 0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"><Setter Property="Text" Value="{DynamicResource vplNotConnected}" />
+                                    <Style.Triggers><DataTrigger Binding="{Binding IsConnected}" Value="True"><Setter Property="Text" Value="{DynamicResource vplConnected}" /></DataTrigger></Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Border Width="1" Height="28" Background="{DynamicResource VplLine}" Margin="6 0" />
+                        <Button Style="{StaticResource ToolButton}" Click="OnToggleMissions" ToolTip="{DynamicResource vplTipMissions}">
+                            <Grid>
+                                <TextBlock Text="🏆" FontSize="17" />
+                                <Border x:Name="StarBadge" Background="{StaticResource Yellow}" CornerRadius="8" Padding="4 0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 -5 -9 0" Visibility="Collapsed">
+                                    <TextBlock x:Name="StarBadgeText" Text="0" Foreground="#5A4500" FontSize="9.5" FontWeight="Bold" />
+                                </Border>
+                            </Grid>
+                        </Button>
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding ToggleAdvancedCommand}" ToolTip="{DynamicResource vplTipAdvanced}">
+                            <TextBlock FontSize="17">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"><Setter Property="Text" Value="🚀" /><Setter Property="Opacity" Value="0.55" />
+                                        <Style.Triggers><DataTrigger Binding="{Binding AdvancedMode}" Value="True"><Setter Property="Opacity" Value="1" /></DataTrigger></Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding ToggleCodeCommand}" ToolTip="{DynamicResource vplTipCode}"><TextBlock Text="🎓" FontSize="17" /></Button>
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding InfoCommand}" ToolTip="{DynamicResource vplTipInfo}"><TextBlock Text="ⓘ" FontSize="19" /></Button>
+                        <Button Style="{StaticResource ToolButton}" Click="OnScreenshot" ToolTip="{DynamicResource vplTipScreenshot}"><TextBlock Text="📷" FontSize="17" /></Button>
+                        <Button Style="{StaticResource ToolButton}" Click="OnToggleMute" ToolTip="{DynamicResource vplTipMute}"><TextBlock x:Name="MuteGlyph" Text="🔊" FontSize="16" /></Button>
+                        <Button x:Name="ThemeBtn" Style="{StaticResource ToolButton}" Click="OnToggleTheme" ToolTip="{DynamicResource vplTipTheme}"><TextBlock x:Name="ThemeGlyph" Text="☀" FontSize="18" /></Button>
+                        <Button Style="{StaticResource ToolButton}" Command="{Binding CloseCommand}" ToolTip="{DynamicResource vplTipHome}"><TextBlock Text="🏠" FontSize="17" /></Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- CONTENT -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="118" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="118" />
+                </Grid.ColumnDefinitions>
+
+                <!-- EVENTS palette -->
+                <Border Grid.Column="0" Background="{DynamicResource VplPanel}" Margin="8" CornerRadius="12">
+                    <StackPanel Margin="8">
+                        <TextBlock Text="{DynamicResource vplEventsTitle}" Foreground="{StaticResource EventOrange}" FontSize="14" FontWeight="Bold" Margin="2 0 0 6" TextTrimming="None" />
+
+                        <!-- Buttons -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddEventCommand}" CommandParameter="Button" ToolTip="{DynamicResource vplEvtButtons}">
+                            <Border Background="{StaticResource EventOrange}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Border Background="White" CornerRadius="9" />
+                                    <Path Data="M24 7 L29 14 L19 14 Z" Fill="#EE7B2F" />
+                                    <Path Data="M24 41 L29 34 L19 34 Z" Fill="#EE7B2F" />
+                                    <Path Data="M7 24 L14 19 L14 29 Z" Fill="#EE7B2F" />
+                                    <Path Data="M41 24 L34 19 L34 29 Z" Fill="#EE7B2F" />
+                                    <Ellipse Width="11" Height="11" Fill="#EE7B2F" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- Obstacle -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddEventCommand}" CommandParameter="Obstacle" ToolTip="{DynamicResource vplEvtObstacle}">
+                            <Border Background="{StaticResource EventOrange}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="56" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Path Data="M5,40 L5,22 A23,23 0 0 1 51,22 L51,40 Z" Fill="White" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0 5 0 0">
+                                        <Rectangle Width="5" Height="5" Fill="#EE7B2F" Margin="2 0" />
+                                        <Rectangle Width="5" Height="5" Fill="#E03B2F" Margin="2 0" />
+                                        <Rectangle Width="5" Height="5" Fill="#E03B2F" Margin="2 0" />
+                                        <Rectangle Width="5" Height="5" Fill="#E03B2F" Margin="2 0" />
+                                        <Rectangle Width="5" Height="5" Fill="#EE7B2F" Margin="2 0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- Line -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddEventCommand}" CommandParameter="Line" ToolTip="{DynamicResource vplEvtLine}">
+                            <Border Background="{StaticResource EventOrange}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="56" Height="46" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Border Background="White" CornerRadius="9" Width="46" Height="34" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0 0 0 7">
+                                        <Ellipse Width="8" Height="8" Fill="#E03B2F" Margin="5 0" />
+                                        <Ellipse Width="8" Height="8" Fill="#E03B2F" Margin="5 0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- Start -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddEventCommand}" CommandParameter="Start" ToolTip="{DynamicResource vplEvtStart}">
+                            <Border Background="{StaticResource EventOrange}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Ellipse Width="42" Height="42" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Path Data="M19 15 L32 24 L19 33 Z" Fill="#EE7B2F" />
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- Timer elapsed (advanced mode) -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddEventCommand}" CommandParameter="Timer" ToolTip="{DynamicResource vplEvtTimer}"
+                                Visibility="{Binding AdvancedMode, Converter={StaticResource BoolVis}}">
+                            <Border Background="{StaticResource EventOrange}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Ellipse Width="38" Height="38" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <!-- bells -->
+                                    <Ellipse Width="10" Height="10" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3 2 0 0" />
+                                    <Ellipse Width="10" Height="10" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 2 3 0" />
+                                    <!-- hands -->
+                                    <Rectangle Width="3" Height="12" Fill="#EE7B2F" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0 -10 0 0" />
+                                    <Rectangle Width="3" Height="9" Fill="#EE7B2F" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.9" Margin="0 -6 0 0">
+                                        <Rectangle.RenderTransform><RotateTransform Angle="100" /></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                </Grid>
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- CANVAS -->
+                <Grid Grid.Column="1" Margin="0 8">
+                    <Border Background="{DynamicResource VplBg}" CornerRadius="12" />
+
+                    <!-- empty state -->
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding HasRules, Converter={StaticResource InverseBoolVis}}">
+                        <StackPanel>
+                            <!-- 3D CarthaBot mascot (Blender-authored, exported to Vpl\Assets\carthabot_robot.obj).
+                                 The viewer auto-spins on a turntable; the Grid gently bobs up and down. -->
+                            <Grid Width="240" Height="210" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform><TranslateTransform x:Name="RobotFloat" Y="0" /></Grid.RenderTransform>
+                                <Grid.Triggers>
+                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="RobotFloat" Storyboard.TargetProperty="Y" From="-8" To="8" Duration="0:0:2" AutoReverse="True" RepeatBehavior="Forever">
+                                                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut" /></DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Grid.Triggers>
+                                <controls:Model3DViewer x:Name="EmptyRobot" AutoRotate="True" RotateSeconds="14" />
+                            </Grid>
+                            <TextBlock Text="{DynamicResource vplEmptyTitle}" Foreground="{DynamicResource VplTextDim}" FontSize="16" HorizontalAlignment="Center" Margin="0 16 0 0" TextAlignment="Center" />
+                            <TextBlock Text="{DynamicResource vplEmptyHint}" Foreground="{DynamicResource VplTextDim}" Opacity="0.8" FontSize="13" HorizontalAlignment="Center" Margin="0 6 0 0" TextAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10 4" Visibility="{Binding HasRules, Converter={StaticResource BoolVis}}">
+                        <ItemsControl ItemsSource="{Binding Rules}" ItemTemplate="{StaticResource RuleRow}" />
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ACTIONS palette -->
+                <Border Grid.Column="2" Background="{DynamicResource VplPanel}" Margin="8" CornerRadius="12">
+                    <StackPanel Margin="8">
+                        <TextBlock Text="{DynamicResource vplActionsTitle}" Foreground="{StaticResource ActionBlue}" FontSize="14" FontWeight="Bold" Margin="2 0 0 6" />
+
+                        <!-- Move -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddActionCommand}" CommandParameter="Move" ToolTip="{DynamicResource vplActMove}">
+                            <Border Background="{StaticResource ActionBlue}" CornerRadius="14" Width="68" Height="68">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid Width="20" Height="46" Margin="3 0">
+                                        <Rectangle Width="6" Fill="#1E5E86" RadiusX="3" RadiusY="3" />
+                                        <Path Data="M10 3 L15 10 L5 10 Z" Fill="White" VerticalAlignment="Top" />
+                                        <Path Data="M10 43 L15 36 L5 36 Z" Fill="White" VerticalAlignment="Bottom" />
+                                        <Border Width="15" Height="7" CornerRadius="4" Background="White" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <Grid Width="20" Height="46" Margin="3 0">
+                                        <Rectangle Width="6" Fill="#1E5E86" RadiusX="3" RadiusY="3" />
+                                        <Path Data="M10 3 L15 10 L5 10 Z" Fill="White" VerticalAlignment="Top" />
+                                        <Path Data="M10 43 L15 36 L5 36 Z" Fill="White" VerticalAlignment="Bottom" />
+                                        <Border Width="15" Height="7" CornerRadius="4" Background="White" VerticalAlignment="Center" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+
+                        <!-- LED Colour -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddActionCommand}" CommandParameter="Color" ToolTip="{DynamicResource vplActColor}">
+                            <Border Background="{StaticResource ActionBlue}" CornerRadius="14" Width="68" Height="68">
+                                <StackPanel Width="46" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Grid Height="11" Margin="0 2">
+                                        <Border Background="#2A6E96" CornerRadius="5" />
+                                        <Border Background="#FF4D4D" CornerRadius="5" Width="28" HorizontalAlignment="Left" />
+                                        <Ellipse Width="11" Height="11" Fill="White" HorizontalAlignment="Left" Margin="24 0 0 0" />
+                                    </Grid>
+                                    <Grid Height="11" Margin="0 2">
+                                        <Border Background="#2A6E96" CornerRadius="5" />
+                                        <Border Background="#37D67A" CornerRadius="5" Width="18" HorizontalAlignment="Left" />
+                                        <Ellipse Width="11" Height="11" Fill="White" HorizontalAlignment="Left" Margin="14 0 0 0" />
+                                    </Grid>
+                                    <Grid Height="11" Margin="0 2">
+                                        <Border Background="#2A6E96" CornerRadius="5" />
+                                        <Border Background="#4D7DFF" CornerRadius="5" Width="36" HorizontalAlignment="Left" />
+                                        <Ellipse Width="11" Height="11" Fill="White" HorizontalAlignment="Left" Margin="32 0 0 0" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+
+                        <!-- Sound -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddActionCommand}" CommandParameter="Sound" ToolTip="{DynamicResource vplActSound}">
+                            <Border Background="{StaticResource ActionBlue}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="48" Height="44" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Rectangle Height="2" Fill="#BFE0F0" Margin="4 3" />
+                                        <Rectangle Height="2" Fill="#BFE0F0" Margin="4 3" />
+                                        <Rectangle Height="2" Fill="#BFE0F0" Margin="4 3" />
+                                    </StackPanel>
+                                    <Ellipse Width="10" Height="10" Fill="#FF5D5D" HorizontalAlignment="Left" Margin="6 4 0 0" />
+                                    <Ellipse Width="10" Height="10" Fill="#FFD23F" HorizontalAlignment="Left" Margin="20 24 0 0" />
+                                    <Ellipse Width="10" Height="10" Fill="#37D67A" HorizontalAlignment="Left" Margin="34 10 0 0" />
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- Wait -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddActionCommand}" CommandParameter="Wait" ToolTip="{DynamicResource vplActWait}">
+                            <Border Background="{StaticResource ActionBlue}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="44" Height="44" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Ellipse Width="40" Height="40" Stroke="White" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Rectangle Width="3" Height="12" Fill="White" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0 -6 0 0" />
+                                    <Rectangle Width="3" Height="9" Fill="White" VerticalAlignment="Center" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.9">
+                                        <Rectangle.RenderTransform><RotateTransform Angle="75" /></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- LED ring Animation -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddActionCommand}" CommandParameter="Anim" ToolTip="{DynamicResource vplActAnim}">
+                            <Border Background="{StaticResource ActionBlue}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <!-- ring of coloured LEDs -->
+                                    <Ellipse Width="40" Height="40" Stroke="White" StrokeThickness="3" Opacity="0.45" />
+                                    <Ellipse Width="9" Height="9" Fill="#FF5D5D" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                                    <Ellipse Width="9" Height="9" Fill="#FFD23F" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <Ellipse Width="9" Height="9" Fill="#37D67A" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                                    <Ellipse Width="9" Height="9" Fill="#00E0FF" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                    <Ellipse Width="9" Height="9" Fill="#FF00C8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 4 4 0" />
+                                    <Ellipse Width="9" Height="9" Fill="#FFFFFF" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4 4 0 0" />
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- Start Timer (advanced mode) -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddActionCommand}" CommandParameter="Timer" ToolTip="{DynamicResource vplActTimer}"
+                                Visibility="{Binding AdvancedMode, Converter={StaticResource BoolVis}}">
+                            <Border Background="{StaticResource ActionBlue}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Ellipse Width="36" Height="36" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Ellipse Width="9" Height="9" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4 3 0 0" />
+                                    <Ellipse Width="9" Height="9" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 3 4 0" />
+                                    <Path Data="M24 24 L24 14" Stroke="#2D9CDB" StrokeThickness="3" StrokeEndLineCap="Round" />
+                                    <Path Data="M24 24 L31 28" Stroke="#2D9CDB" StrokeThickness="3" StrokeEndLineCap="Round" />
+                                </Grid>
+                            </Border>
+                        </Button>
+
+                        <!-- Memory / State (advanced mode) -->
+                        <Button Style="{StaticResource PaletteTile}" Command="{Binding AddActionCommand}" CommandParameter="State" ToolTip="{DynamicResource vplActState}"
+                                Visibility="{Binding AdvancedMode, Converter={StaticResource BoolVis}}">
+                            <Border Background="{StaticResource ActionBlue}" CornerRadius="14" Width="68" Height="68">
+                                <Grid Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="★" FontSize="17" Foreground="#F2C94C" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3 0 0 0" />
+                                    <TextBlock Text="♥" FontSize="16" Foreground="#FF8585" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 1 4 0" />
+                                    <TextBlock Text="●" FontSize="14" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="5 0 0 2" />
+                                    <TextBlock Text="■" FontSize="14" Foreground="#9CF7C6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 6 2" />
+                                </Grid>
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3D SIMULATION OVERLAY (opens on ▶) -->
+                <Border x:Name="SimOverlay" Grid.ColumnSpan="3" Background="#CC0E1418" Visibility="Collapsed">
+                    <Border Background="{DynamicResource VplToolbar}" CornerRadius="12" Margin="40 16" BorderBrush="{StaticResource Green}" BorderThickness="1">
+                        <Grid Margin="16">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{DynamicResource vplSimTitle}" Foreground="{StaticResource Green}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
+                                    <TextBlock Text="{DynamicResource vplSimHint}" Foreground="{DynamicResource VplTextDim}" FontSize="12" VerticalAlignment="Center" Margin="14 2 0 0" />
+                                </StackPanel>
+                                <Button Content="{DynamicResource vplCloseBtn}" HorizontalAlignment="Right" Padding="14 6" Cursor="Hand" Foreground="White" Background="{StaticResource ActionBlue}" BorderThickness="0" Click="OnCloseSim" />
+                            </Grid>
+                            <Border Grid.Row="1" Background="#0E1418" CornerRadius="8" Margin="0 10 0 0" ClipToBounds="True">
+                                <controls:RobotSimulator x:Name="Sim" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Border>
+
+                <!-- MISSIONS OVERLAY -->
+                <Border x:Name="MissionsOverlay" Grid.ColumnSpan="3" Background="#CC0E1418" Visibility="Collapsed">
+                    <Border Background="{DynamicResource VplToolbar}" CornerRadius="12" Margin="70 26" BorderBrush="{StaticResource Yellow}" BorderThickness="1">
+                        <Grid Margin="18">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🏆" FontSize="20" VerticalAlignment="Center" Margin="0 0 8 0" />
+                                    <TextBlock Text="{DynamicResource vplMissionsTitle}" Foreground="{StaticResource Yellow}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
+                                    <TextBlock Text="{DynamicResource vplMissionsHint}" Foreground="{DynamicResource VplTextDim}" FontSize="12" VerticalAlignment="Center" Margin="14 2 0 0" />
+                                </StackPanel>
+                                <Button Content="{DynamicResource vplCloseBtn}" HorizontalAlignment="Right" Padding="14 6" Cursor="Hand" Foreground="White" Background="{StaticResource ActionBlue}" BorderThickness="0" Click="OnCloseMissions" />
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0 12 0 0">
+                                <ItemsControl x:Name="MissionList">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center" /></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource PaletteTile}" Click="OnMissionCard" Tag="{Binding}">
+                                                <Border Width="168" Height="158" CornerRadius="14" Background="{DynamicResource VplPanel}" BorderBrush="{DynamicResource VplLine}" BorderThickness="1.5" Margin="7">
+                                                    <Grid>
+                                                        <StackPanel VerticalAlignment="Center" Margin="10 0">
+                                                            <TextBlock Text="{Binding Glyph}" FontSize="38" HorizontalAlignment="Center" />
+                                                            <TextBlock Text="{Binding Title}" Foreground="{DynamicResource VplText}" FontSize="13.5" FontWeight="Bold" HorizontalAlignment="Center" Margin="0 6 0 0" TextWrapping="Wrap" TextAlignment="Center" />
+                                                            <TextBlock Text="{Binding Hint}" Foreground="{DynamicResource VplTextDim}" FontSize="10.5" HorizontalAlignment="Center" Margin="0 4 0 0" TextWrapping="Wrap" TextAlignment="Center" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="⭐" FontSize="19" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 7 9 0" Visibility="{Binding StarVisibility}" />
+                                                    </Grid>
+                                                </Border>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Border>
+
+                <!-- CODE OVERLAY -->
+                <Border Grid.ColumnSpan="3" Background="#CC0E1418" Visibility="{Binding ShowCode, Converter={StaticResource BoolVis}}">
+                    <Border Background="{DynamicResource VplToolbar}" CornerRadius="12" Margin="60 20" BorderBrush="{StaticResource Cyan}" BorderThickness="1">
+                        <Grid Margin="16">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <Grid>
+                                <TextBlock Text="{DynamicResource vplGenCode}" Foreground="{StaticResource Cyan}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
+                                <Button Content="{DynamicResource vplCloseBtn}" HorizontalAlignment="Right" Padding="14 6" Cursor="Hand" Foreground="White" Background="{StaticResource ActionBlue}" BorderThickness="0" Command="{Binding ToggleCodeCommand}" />
+                            </Grid>
+                            <Border Grid.Row="1" Background="#0E1418" CornerRadius="8" Margin="0 10 0 0">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Padding="12">
+                                    <TextBox Text="{Binding GeneratedCode, Mode=OneWay}" IsReadOnly="True" Background="Transparent" Foreground="#D6E2E8" BorderThickness="0" FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap" />
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Border>
+            </Grid>
+
+            <!-- STATUS BAR -->
+            <Border Grid.Row="2" Background="{DynamicResource VplToolbar}">
+                <TextBlock Text="{Binding Status}" Foreground="{DynamicResource VplTextDim}" FontSize="12.5" VerticalAlignment="Center" Margin="16 0" />
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

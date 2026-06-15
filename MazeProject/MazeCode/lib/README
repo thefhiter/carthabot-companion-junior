@@ -1,0 +1,404 @@
+// Controller.cpp
+#include "Controller.h"
+#include "Arduino.h"
+#include "communs.h"
+#include "Display.h"
+#include "Joystick.h"
+
+Controller::Controller() : tft(),joy(),matrix(),hv507driver() {
+  pinMode(MCP_CS, OUTPUT);           
+  pinMode(MCP_MOSI, OUTPUT);           
+  pinMode(MCP_CLK, OUTPUT); 
+  digitalWrite(MCP_CS, HIGH);        
+}
+
+
+void Controller::Execute(){
+    
+    if(CurrentView==0){
+        BoostVoltage = round(analogRead(HV_BOOST_PIN) * 0.0410989); // 0.0410989 = (3.3 / 4095) * (102 / 2)
+        tft.UpdateVoltage(BoostVoltage);
+        Direction dir =  joy.GetDirection();
+        if(dir==UP|| dir==DOWN || dir == LEFT|| dir ==RIGHT){
+            matrix.MoveSelection(dir);
+            UpdateDisplay();
+        }
+    }
+    else if(CurrentView==1){
+        switch (joy.GetDirection())
+        {
+            case DOWN:
+                SettingsGoNext();
+                break; 
+            case UP:
+                SettingsGoBack();
+                break; 
+            case LEFT:
+                SettingsDecrease();
+                break; 
+            case RIGHT:
+                SettingsIncrease();
+                break; 
+            default:
+                break;
+        }
+    }
+    else{
+      if (Serial.available() > 0) 
+      {
+          char receivedChar = Serial.read();
+          String inputBuffer = ""; 
+          for(int i =0;i<matrix_X;i++){
+              for(int j =0;j<matrix_Y;j++){
+                  matrix.DropArray[i][j].stat = false;
+              }
+          }
+          hv507driver.SetAllPin(false);
+
+          if (receivedChar != '/') {
+            inputBuffer += receivedChar; // Append received character to the buffer
+          } 
+          else
+          {
+            dataCount = 0;
+            currentDataCount =0;
+            int startIndex = 0;
+            for (int i = 0; i < inputBuffer.length(); i++) {
+              if (inputBuffer[i] == ';') {
+                parsedData[dataCount++] = inputBuffer.substring(startIndex, i);
+                startIndex = i + 1;
+                if (dataCount >= maxEntries) break; // Prevent overflow
+              }
+            }
+            if (dataCount < maxEntries) {
+              parsedData[dataCount++] = inputBuffer.substring(startIndex); // Add last entry
+            }
+            inputBuffer = "";
+
+
+          }
+      }
+      else
+      {
+          unsigned long currentMillis = millis();
+          if (currentMillis - previousMillis >= StepTime) {
+              previousMillis = currentMillis; // 
+              if(dataCount>0 && currentDataCount !=-1){
+                //Clear electrods
+                for(int i =0;i<matrix_X;i++){
+                    for(int j =0;j<matrix_Y;j++){
+                        matrix.DropArray[i][j].stat = false;
+                        hv507driver.SetPin(i, j, false);
+                    }
+                } 
+
+                int StringCount = 0;    
+                String strs[64];   
+                String input = parsedData[currentDataCount];
+                input.trim();
+
+                while (input.length() > 0)
+                {
+                  int index = input.indexOf(' ');
+                  if (index == -1) // No space found
+                  {
+                      strs[StringCount++] = input;
+                      break;
+                  }
+                  else
+                  {
+                      strs[StringCount++] = input.substring(0, index);
+                      input = input.substring(index+1);
+                  }
+                }
+
+                for (int i = 0; i < StringCount; i++) {
+
+                    int pinNumber = strs[i].toInt(); // Convert string to integer
+                    if (pinNumber >= 0 && pinNumber < 64) { // Validate pin index
+                      for(int i=0;i<8;i++){
+                        for(int j=0;j<8;j++){
+                          if(CorrspandenceTable[i][j]==pinNumber){
+                              matrix.DropArray[i][j].stat = 1; // Activate the pin
+                              hv507driver.SetPin(i,j,1);
+                            break;
+                          }
+                        }
+                      }
+                    } 
+                }
+                hv507driver.UpdateDrive();
+                UpdateDisplay();
+                currentDataCount++;
+                if(currentDataCount==dataCount)currentDataCount=-1;
+              }
+              else
+              {    
+                for(int i =0;i<matrix_X;i++){
+                  for(int j =0;j<matrix_Y;j++)
+                  {
+                      matrix.DropArray[i][j].stat = false;
+                      hv507driver.SetPin(i, j, false);
+                  }
+
+                } 
+                  hv507driver.UpdateDrive();
+                  UpdateDisplay();
+              }
+          }
+
+        }
+      }
+}
+
+void Controller::UpdateDisplay(){
+    switch (CurrentView)
+    {
+        case 0:
+            tft.ShwoMainView(matrix,IsAc,Frequency);
+            break;
+        case 1:
+            tft.ShowSettingsView(IsAc_temp, Voltage_temp, Frequency_temp, CurrentLine);
+            break;
+        case 2 :
+            tft.ShwoMainViewSerialMode(matrix,IsAc,Frequency);
+            break;
+
+    }
+}
+void Controller::init(){
+    tft.init();
+    tft.fillScreen(BLACK);
+    tft.ShowSplash();
+    delay(2000);
+    SetMainView();
+    hv507driver.SetFrequency(Frequency);
+
+    
+}
+
+void Controller::StartSerialMode()
+{
+    if(CurrentView==0){
+        CurrentView = 2;
+        tft.fillScreen(BLACK);
+        ClearAllElectrods();
+        tft.ShwoMainViewSerialMode(matrix,IsAc,Frequency);
+    }
+    else if(CurrentView ==2)
+    {
+        CurrentView = 0;
+        tft.fillScreen(BLACK);
+        ClearAllElectrods();
+        tft.ShwoMainView(matrix,IsAc,Frequency);
+    } 
+}
+
+//inputs
+void Controller::SetMainView(){
+    CurrentView = 0;
+    tft.fillScreen(BLACK);
+    tft.ShwoMainView(matrix,IsAc,Frequency);
+} 
+void Controller::SetSettingsView(){
+    CurrentView = 1;
+    IsAc_temp = IsAc;
+    Voltage_temp =Voltage;
+    Frequency_temp = Frequency;
+    CurrentLine=0;
+    tft.fillScreen(BLACK);
+    tft.ShowSettingsView(IsAc_temp, Voltage_temp, Frequency_temp, CurrentLine);
+
+} 
+void Controller::SwitchToAC(){
+    IsAc_temp = true;
+} 
+void Controller::SwitchToDC(){
+    IsAc_temp = false;
+} 
+void Controller::Validate()
+{
+    if(CurrentView==0){
+        
+
+    }
+    else{
+
+        if(CurrentLine==3)
+        {
+            CurrentView = 0;
+            IsAc= IsAc_temp ;
+            Voltage = Voltage_temp ;
+            Frequency = Frequency_temp ;
+
+            long VOLTAGE_set_value=255*((1.5*1500000)/(Voltage-1.5)-6800)/50000; // Calculate set value (max 255) for 10kOhm digial potentiometer from reference voltage 1.5V, voltage devider R1.5MOhm / 6.8kOhm, 
+            SetVoltage((int)VOLTAGE_set_value);
+            hv507driver.SetFrequency(Frequency);
+            CurrentLine=0;
+            tft.fillScreen(BLACK);
+            UpdateDisplay();
+        }
+        else if(CurrentLine==4){
+            CurrentView = 0;
+            CurrentLine=0;
+            tft.fillScreen(BLACK);
+            UpdateDisplay();
+        }
+            
+    }
+} 
+void Controller::DriveElectrod(){
+    if(CurrentView==0){       
+        matrix.DropArray[matrix.SelectedCell.x][matrix.SelectedCell.y].stat =!matrix.DropArray[matrix.SelectedCell.x][matrix.SelectedCell.y].stat ;
+        UpdateDisplay();
+        hv507driver.SetPin(matrix.SelectedCell.x,matrix.SelectedCell.y,matrix.DropArray[matrix.SelectedCell.x][matrix.SelectedCell.y].stat );
+        hv507driver.UpdateDrive();
+    }
+
+}
+void Controller::ClearAllElectrods(){
+    if(CurrentView==0){     
+        for(int i =0;i<matrix_X;i++){
+            for(int j =0;j<matrix_Y;j++){
+                matrix.DropArray[i][j].stat = false;
+                hv507driver.SetPin(i,j,false);
+            }
+        }
+        UpdateDisplay();
+        hv507driver.UpdateDrive();
+
+    }
+    else if(CurrentView == 2){
+        for(int i =0;i<matrix_X;i++){
+            for(int j =0;j<matrix_Y;j++){
+                matrix.DropArray[i][j].stat = false;
+                hv507driver.SetPin(i,j,false);
+            }
+        }
+        hv507driver.UpdateDrive();
+    }
+}
+
+void Controller::SettingsGoNext()
+{
+    switch (CurrentLine)
+    {
+        case 0:
+            CurrentLine = 1;
+            break;
+        case 1:
+            if(IsAc_temp)CurrentLine = 2;
+            else CurrentLine = 3;
+            break;
+        case 2:
+            CurrentLine = 3;
+            break;
+        case 3:
+            CurrentLine=4;
+            break;
+        case 4:
+            CurrentLine=0;
+            break;
+            
+    }
+UpdateDisplay();
+}
+void Controller::SettingsGoBack(){
+    switch (CurrentLine)
+    {
+        case 0:
+            CurrentLine = 4;
+            break;
+        case 1:
+            CurrentLine = 0;
+            break;
+        case 2:
+            CurrentLine = 1;
+            break;
+        case 3:
+            if(IsAc_temp)CurrentLine = 2;
+            else CurrentLine = 1;
+            break;
+        case 4:
+            CurrentLine=3;
+            break;
+    }
+    UpdateDisplay();
+}
+void Controller::SettingsIncrease(){
+    if(CurrentView==1){
+        if(CurrentLine==0){
+            if(IsAc_temp){
+                IsAc_temp = false;
+            }
+            else{
+                IsAc_temp = true;
+            }
+        }
+        else if(CurrentLine == 1){
+            if(Voltage_temp!=maxVolt)Voltage_temp += VoltSep;
+        }
+        else if(CurrentLine == 2){
+            if(Frequency_temp!=maxFreq)Frequency_temp += FreqSep;
+        }
+    }
+    UpdateDisplay();
+}
+void Controller::SettingsDecrease(){
+        if(CurrentView==1){
+        if(CurrentLine==0){
+            if(IsAc_temp){
+                IsAc_temp = false;
+            }
+            else{
+                IsAc_temp = true;
+            }
+        }
+        else if(CurrentLine == 1){
+            if(Voltage_temp>minVolt)Voltage_temp -= VoltSep;
+        }
+        else if(CurrentLine == 2){
+            if(Frequency_temp>minFreq)Frequency_temp -= FreqSep;
+        }
+    }
+    UpdateDisplay();
+}
+
+
+
+
+void Controller::spi_transfer(byte working) {
+
+      for(int i = 1; i <= 8; i++) { // setup a loop of 8 iterations, one for each bit
+        if (working > 127) 
+        { // test the most significant bit
+            digitalWrite(MCP_MOSI,HIGH); // if it is a 1 (ie. B1XXXXXXX), set the master out pin high
+        }
+        else 
+        {
+            digitalWrite(MCP_MOSI, LOW); // if it is not 1 (ie. B0XXXXXXX), set the master out pin low
+        }
+
+        digitalWrite(MCP_CLK,HIGH); // set clock high, the pot IC will read the bit into its register
+        working = working << 1;
+        digitalWrite(MCP_CLK,LOW); // set clock low, the pot IC will stop reading and prepare for the next iteration (next significant bit
+      }
+
+}
+
+void Controller::spi_out(int SS, byte cmd_byte, byte data_byte) { // SPI tranfer out function begins here
+    byte work;
+    digitalWrite(SS, LOW); // set slave select low for a certain chip, defined in the argument in the main loop. selects the chip
+    work = cmd_byte; // let the work byte equal the cmd_byte, defined in the argument in the main loop
+    spi_transfer(work); // transfer the work byte, which is equal to the cmd_byte, out using spi
+    work = data_byte; // let the work byte equal the data for the pot
+    spi_transfer(work); // transfer the work byte, which is equal to the data for the pot
+    digitalWrite(SS, HIGH); // set slave select high for a certain chip, defined in the argument in the main loop. deselcts the chip
+}
+void Controller::SetVoltage(int value){
+       
+  digitalWrite(TFT_CS, HIGH);
+  value = constrain(value, 0, 255);  
+  spi_out(MCP_CS,0x11,(byte)value); 
+  
+}

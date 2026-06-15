@@ -1,0 +1,815 @@
+﻿<UserControl x:Class="AdvancedProgramming.Views.AdvancedProgrammingView"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:prism="http://prismlibrary.com/"
+	xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+	xmlns:iconpack="http://metro.mahapps.com/winfx/xaml/iconpacks"
+	xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+	xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+	xmlns:system="clr-namespace:System;assembly=mscorlib"
+
+             prism:ViewModelLocator.AutoWireViewModel="True">
+    <UserControl.InputBindings>
+        <KeyBinding Key="S" 
+                    Modifiers="Control" 
+                    Command="{Binding SaveScriptCommand}" />
+    </UserControl.InputBindings>
+    <UserControl.Resources>
+        <syncfusion:FormatsCollection x:Key="pythonLanguageFormats">
+            <syncfusion:EditFormats Foreground="Black" FormatName="TextFormat" />
+            <syncfusion:EditFormats Foreground="Green" FormatName="CommentFormat" />
+            <syncfusion:EditFormats Foreground="Blue" FormatName="KeywordFormat" />
+            <syncfusion:EditFormats Foreground="Red" FormatName="OperatorFormat" />
+            <syncfusion:EditFormats Foreground="Gray" FormatName="LiteralsFormat" />
+            <syncfusion:EditFormats Foreground="Violet" FormatName="NumberFormat" />
+            <!-- New -->
+        </syncfusion:FormatsCollection>
+        <syncfusion:LexemCollection x:Key="pythonLanguageLexems">
+            <syncfusion:Lexem
+                    ContainsEndText="True"
+                    EndText="\r\n"
+                    FormatName="CommentFormat"
+                    IsMultiline="False"
+                    LexemType="Comment"
+                    StartText="#" />
+            <syncfusion:Lexem
+                    ContainsEndText="True"
+                    EndText="&quot;&quot;&quot;"
+                    FormatName="CommentFormat"
+                    IsMultiline="True"
+                    LexemType="Comment"
+                    StartText="&quot;&quot;&quot;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="and" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="as" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="assert" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="break" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="class" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="continue" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="def" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="del" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="elif" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="else" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="except" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="exec" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="finally" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="for" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="from" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="global" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="if" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="import" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="in" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="is" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="lambda" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="not" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="or" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="pass" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="print" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="raise" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="return" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="try" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="while" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="with" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="KeywordFormat"
+                    IsMultiline="False"
+                    LexemType="Keyword"
+                    StartText="yeild" />
+            <syncfusion:Lexem
+                    EndText="&quot;"
+                    FormatName="LiteralsFormat"
+                    IsMultiline="False"
+                    LexemType="Literals"
+                    StartText="&quot;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="\{" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="\}" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="." />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="," />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText=";" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText=":" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="+" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="-" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="/" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="%" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="^" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="*" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="**" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="|" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="|=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&amp;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="~" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&lt;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&gt;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="==" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="!=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&lt;=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&gt;=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="+=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="-=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="*=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="%=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="/=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&amp;=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="^=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="|=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&lt;&lt;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&lt;&lt;=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="=&gt;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&lt;&gt;" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="&gt;&gt;=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="**;=" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="(" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText=")" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="[" />
+            <syncfusion:Lexem
+                    ContainsEndText="False"
+                    FormatName="OperatorFormat"
+                    IsMultiline="False"
+                    LexemType="Operator"
+                    StartText="]" />
+        </syncfusion:LexemCollection>
+    </UserControl.Resources>
+    <Border Background="#192428" Grid.Row="1">
+        <Border Grid.Row="0" Grid.RowSpan="2" Margin="2.5" Grid.Column="0" BorderBrush="Gray"  Background="#2d383c" BorderThickness="2" CornerRadius="10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Center">
+
+                    <!-- Start Button -->
+                    <Button Command="{Binding RunScriptCommand}"
+        Cursor="Hand"
+        Margin="5 0"
+        Height="50"
+        Background="Transparent"
+        BorderThickness="2"
+        BorderBrush="#00E676"
+        ToolTip="{DynamicResource tooltipStart}"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="25">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+
+                        <StackPanel Orientation="Horizontal" Margin="5 0">
+                            <iconpack:PackIconBootstrapIcons Kind="PlayCircleFill"
+                                         Foreground="#00E676"
+                                         Height="30" Width="30"/>
+                            <TextBlock Text="{DynamicResource btnStart}"
+                   TextAlignment="Center"
+                   Foreground="#00E676"
+                   VerticalAlignment="Center"
+                   Margin="5 0 5 0"
+                   FontWeight="DemiBold"
+                   FontSize="20" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Stop Button -->
+                    <Button Command="{Binding StopScriptCommand}"
+        Cursor="Hand"
+        Margin="5 0"
+        Height="50"
+        Background="Transparent"
+        BorderThickness="2"
+        BorderBrush="#FF4D6D"
+        ToolTip="{DynamicResource tooltipStop}"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="25">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+
+                        <StackPanel Orientation="Horizontal" Margin="5 0">
+                            <iconpack:PackIconBootstrapIcons Kind="StopCircleFill"
+                                         Foreground="#FF4D6D"
+                                         Height="30" Width="30"/>
+                            <TextBlock Text="{DynamicResource btnStop}"
+                   TextAlignment="Center"
+                   Foreground="#FF4D6D"
+                   VerticalAlignment="Center"
+                   Margin="5 0 5 0"
+                   FontWeight="DemiBold"
+                   FontSize="20" />
+                        </StackPanel>
+                    </Button>
+
+                </StackPanel>
+                <Grid Grid.Row="1" Margin="0 5 5 0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4*" MinWidth="500"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="3*" />
+                    </Grid.ColumnDefinitions>
+                    <!-- Syncfusion Grid Splitter -->
+                    <syncfusion:SfGridSplitter Grid.Column="1"
+                               Margin="0 25"
+                               Width="5"
+                               HorizontalAlignment="Stretch"
+                               VerticalAlignment="Stretch"
+                               EnableCollapseButton="true"
+                               ResizeBehavior="PreviousAndNext"
+                               ShowsPreview="False"
+                               ResizeDirection="Columns" />
+                    <!-- Right Panel -->
+                    <Grid Grid.Column="2" Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="0"/>
+                        </Grid.RowDefinitions>
+                        <Border CornerRadius="10" Background="Black">
+                            <Grid>
+                                <!-- CLI Output -->
+                                <TextBox x:Name="CliOutputBox"
+                                 Text="{Binding CliOutput, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="5"
+                                 FontFamily="Consolas" FontSize="14"
+                                 Foreground="White" Background="Transparent" BorderThickness="0"
+                                 IsReadOnly="True" AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 TextChanged="CliOutputBox_TextChanged"/>
+                                <!-- Clear Button -->
+                                <Button Command="{Binding ClearCommand}" Cursor="Hand" Margin="20 20 30 20"  
+                                    VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                                    Width="50" Height="50"
+                                    Background="Transparent" BorderThickness="2" BorderBrush="White">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="25">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                    <iconpack:PackIconBootstrapIcons Kind="Trash3" Foreground="White"
+                                                     Height="30" Width="30"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <!-- CLI Input -->
+                        <Grid Grid.Row="1" Margin="5 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0"
+                                 Text="{Binding CommandLine, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 FontFamily="Consolas" FontSize="14"
+                                 Foreground="White" Background="Black"
+                                 BorderBrush="Gray" Margin="2"/>
+                            <Button Command="{Binding SendCommand}" Grid.Column="1" Margin="2">Send</Button>
+                        </Grid>
+                    </Grid>
+                    <!-- Left Panel -->
+                    <Border Grid.Row="1" Grid.Column="0" CornerRadius="10" Margin="5 0 5 5" Background="LightGray">
+                        <Grid Margin=" 0 2 0 0">
+                            <Grid.Resources>
+                                <ResourceDictionary>
+                                    <ResourceDictionary.MergedDictionaries>
+                                        <ResourceDictionary Source="PathIcon.xaml"/>
+                                    </ResourceDictionary.MergedDictionaries>
+                                </ResourceDictionary>
+                            </Grid.Resources>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Menu x:Name="Mainmenu" Margin="5 2" Background="Transparent" Grid.ColumnSpan="2" BorderBrush="LightGray">
+                                <MenuItem Header="{DynamicResource menuFile}" Background="Transparent">
+                                    <MenuItem Header="{DynamicResource menuNew}" Command="{x:Static syncfusion:EditCommands.New}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuOpen}" Command="{x:Static syncfusion:EditCommands.Open}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuSave}" Command="{x:Static syncfusion:EditCommands.Save}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuSaveAs}" Command="{x:Static syncfusion:EditCommands.SaveAs}" CommandTarget="{Binding ElementName=editControl}" />
+                                </MenuItem>
+
+                                <MenuItem Header="{DynamicResource menuEdit}" Background="Transparent">
+                                    <MenuItem Header="{DynamicResource menuUndo}" Command="{x:Static syncfusion:EditCommands.Undo}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuRedo}" Command="{x:Static syncfusion:EditCommands.Redo}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuCut}" Command="{x:Static syncfusion:EditCommands.Cut}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuCopy}" Command="{x:Static syncfusion:EditCommands.Copy}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuPaste}" Command="{x:Static syncfusion:EditCommands.Paste}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuSelectAll}" Command="{x:Static syncfusion:EditCommands.SelectAll}" CommandTarget="{Binding ElementName=editControl}" />
+                                    <MenuItem Header="{DynamicResource menuFindReplace}">
+                                        <MenuItem Header="{DynamicResource menuFind}" Command="{x:Static syncfusion:EditCommands.Find}" CommandTarget="{Binding ElementName=editControl}" />
+                                        <MenuItem Header="{DynamicResource menuReplace}" Command="{x:Static syncfusion:EditCommands.Replace}" CommandTarget="{Binding ElementName=editControl}" />
+                                    </MenuItem>
+                                </MenuItem>
+
+                                <MenuItem Header="{DynamicResource menuOptions}" Background="Transparent">
+                                    <MenuItem Header="{DynamicResource menuAcceptsTab}" IsCheckable="True" IsChecked="{Binding ElementName=editControl, Path=AcceptsTab}" />
+                                    <MenuItem Header="{DynamicResource menuIsReadOnly}" IsCheckable="True" IsChecked="{Binding ElementName=editControl, Path=IsReadOnly}" />
+                                    <MenuItem Header="{DynamicResource menuShowLineNumber}" IsCheckable="True" IsChecked="{Binding ElementName=editControl, Path=ShowLineNumber}" />
+                                    <MenuItem Header="{DynamicResource menuShowDefaultContextMenu}" IsCheckable="True" IsChecked="{Binding ElementName=editControl, Path=ShowDefaultContextMenu}" />
+                                </MenuItem>
+                            </Menu>
+
+                            <ToolBar x:Name="Toolbar" Grid.Row="1" Grid.ColumnSpan="1" Margin="10 0 10 0">
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.New}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipNew}"
+            Content="{StaticResource New}" Foreground="Black" />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.Open}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipOpen}"
+            Content="{StaticResource Open}" Foreground="Black" />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.Save}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipSave}"
+            Content="{StaticResource Save}" Foreground="Black" />
+
+                                <Separator />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.Cut}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipCut}"
+            ToolTipService.ShowOnDisabled="True"
+            Content="{StaticResource Cut}" Foreground="Black" />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.Copy}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipCopy}"
+            ToolTipService.ShowOnDisabled="True"
+            Content="{StaticResource Copy}" Foreground="Black" />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.Paste}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipPaste}"
+            ToolTipService.ShowOnDisabled="True"
+            Content="{StaticResource Paste}" Foreground="Black" />
+
+                                <Separator />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.Undo}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipUndo}"
+            ToolTipService.ShowOnDisabled="True"
+            Content="{StaticResource Undo}" Foreground="Black" />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.Redo}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipRedo}"
+            ToolTipService.ShowOnDisabled="True"
+            Content="{StaticResource Redo}" Foreground="Black" />
+
+                                <Separator />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.DecreaseIndent}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipDecreaseIndent}"
+            Content="{StaticResource DecreaseIndent}" Foreground="Black" />
+
+                                <Button Height="40"
+            Command="{x:Static syncfusion:EditCommands.IncreaseIndent}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipIncreaseIndent}"
+            Content="{StaticResource IncreaseIndent}" Foreground="Black" />
+
+                                <Separator />
+
+                                <Button Height="30"
+            Command="{x:Static syncfusion:EditCommands.CommentSelection}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipComment}">
+                                    <Image MaxWidth="30" MaxHeight="30" Source="/Syncfusion.Edit.Wpf;component/Resources/comment.png" />
+                                </Button>
+
+                                <Button Height="30"
+            Command="{x:Static syncfusion:EditCommands.UncommentSelection}"
+            CommandTarget="{Binding ElementName=editControl}"
+            ToolTip="{DynamicResource tooltipUncomment}">
+                                    <Image MaxWidth="30" MaxHeight="30" Source="/Syncfusion.Edit.Wpf;component/Resources/uncomment.png" />
+                                </Button>
+
+                            </ToolBar>
+
+                            <TextBlock Margin="10 0 0 5" FontWeight="DemiBold" Grid.Row="2" Text="{Binding DocumentSource}" Foreground="Black"/>
+                            <Border Background="WhiteSmoke" Grid.Row="3" Grid.Column="0" Margin="5 0" CornerRadius="10">
+                                <syncfusion:EditControl 
+                                Margin="5"
+                                Name="editControl"
+                                DocumentLanguage="{Binding Language}" 
+                                TextChanged="editControl_TextChanged"   
+                                DocumentSource="{Binding DocumentSource}"
+                                FontFamily="Consolas"
+                                FontSize="14"
+                                ShowLineNumber="True"
+                                Foreground="Black"
+                                Background="White"
+                                Loaded="editControl_Loaded" />
+                            </Border>
+                        </Grid>
+
+                    </Border>
+                </Grid>
+
+                <Button Command="{Binding CloseViewCommand}" Cursor="Hand" Margin="20 0"  
+                                    VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                                    Width="50" Height="50"
+                                    Background="Transparent" BorderThickness="3" BorderBrush="White">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="25">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <iconpack:PackIconCoolicons Kind="House01" Foreground="White"
+                                                     Height="30" Width="30"/>
+                </Button>
+
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

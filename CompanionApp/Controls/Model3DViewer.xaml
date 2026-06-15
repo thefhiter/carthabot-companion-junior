@@ -1,0 +1,17 @@
+<UserControl x:Class="CompanionApp.Controls.Model3DViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:h="http://helix-toolkit.org/wpf">
+    <Grid>
+        <h:HelixViewport3D x:Name="View"
+                           Background="Transparent"
+                           ShowViewCube="False"
+                           ShowCoordinateSystem="False"
+                           ShowFrameRate="False"
+                           ZoomExtentsWhenLoaded="True"
+                           IsHeadLightEnabled="True">
+            <h:DefaultLights />
+            <ModelVisual3D x:Name="ModelHost" />
+        </h:HelixViewport3D>
+    </Grid>
+</UserControl>

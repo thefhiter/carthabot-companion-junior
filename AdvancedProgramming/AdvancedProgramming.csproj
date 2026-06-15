@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Data\PythonSource.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Data\PythonSource.py">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="6.1.0" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="Prism.Unity" Version="8.1.97" />
+    <PackageReference Include="Quicker.AvalonEdit" Version="6.3.1" />
+    <PackageReference Include="Scintilla.NET.Wpf" Version="1.0.11.5320" />
+    <PackageReference Include="Syncfusion.Edit.WPF" Version="28.1.38" />
+    <PackageReference Include="Syncfusion.SfInput.WPF" Version="28.1.38" />
+    <PackageReference Include="Syncfusion.Shared.WPF" Version="28.1.38" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Images\Maze.png" />
+    <None Remove="Images\robot.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Images\Maze.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\robot.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="5.1.0" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="Prism.Unity" Version="8.1.97" />
+    <PackageReference Include="Syncfusion.Shared.WPF" Version="28.2.6" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="DMSkin.Core">
+      <HintPath>Tools\DMSkin.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DMSkin.WPF">
+      <HintPath>Tools\DMSkin.WPF.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
