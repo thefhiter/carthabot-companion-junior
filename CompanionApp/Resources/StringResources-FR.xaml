@@ -1,0 +1,230 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="us">Anglais</system:String>
+    <system:String x:Key="fr">Francais</system:String>
+
+    <system:String x:Key="githubOur">Notre GitHub</system:String>
+    <system:String x:Key="siteOur">Notre Site Web</system:String>
+    <system:String x:Key="modules">Modules</system:String>
+
+    <system:String x:Key="learn">Apprendre</system:String>
+    <system:String x:Key="behav">Comportements</system:String>
+    <system:String x:Key="bootMode">Veuillez connecter le robot à l'ordinateur et vous assurer de l'allumer</system:String>
+    <system:String x:Key="python">Programmation Avancée (python)</system:String>
+
+
+
+
+    <system:String x:Key="mode1">Éviteur d'obstacles</system:String>
+    <system:String x:Key="mode2">Suiveur</system:String>
+    <system:String x:Key="mode3">Amical</system:String>
+    <system:String x:Key="mode4">Obéissant</system:String>
+
+
+
+
+    <system:String x:Key="menuFile">Fichier</system:String>
+    <system:String x:Key="menuEdit">Édition</system:String>
+    <system:String x:Key="menuOptions">Options</system:String>
+
+    <system:String x:Key="menuNew">Nouveau</system:String>
+    <system:String x:Key="menuOpen">Ouvrir</system:String>
+    <system:String x:Key="menuSave">Enregistrer</system:String>
+    <system:String x:Key="menuSaveAs">Enregistrer sous</system:String>
+
+    <system:String x:Key="menuUndo">Annuler</system:String>
+    <system:String x:Key="menuRedo">Rétablir</system:String>
+    <system:String x:Key="menuCut">Couper</system:String>
+    <system:String x:Key="menuCopy">Copier</system:String>
+    <system:String x:Key="menuPaste">Coller</system:String>
+    <system:String x:Key="menuSelectAll">Tout sélectionner</system:String>
+    <system:String x:Key="menuFindReplace">Rechercher et remplacer</system:String>
+    <system:String x:Key="menuFind">Rechercher</system:String>
+    <system:String x:Key="menuReplace">Remplacer</system:String>
+
+    <system:String x:Key="menuAcceptsTab">Accepter la touche Tab</system:String>
+    <system:String x:Key="menuIsReadOnly">Lecture seule</system:String>
+    <system:String x:Key="menuShowLineNumber">Afficher le numéro de ligne</system:String>
+    <system:String x:Key="menuShowDefaultContextMenu">Afficher le menu contextuel par défaut</system:String>
+
+
+    <!-- Toolbar tooltips -->
+    <system:String x:Key="tooltipNew">Nouveau</system:String>
+    <system:String x:Key="tooltipOpen">Ouvrir</system:String>
+    <system:String x:Key="tooltipSave">Enregistrer</system:String>
+    <system:String x:Key="tooltipCut">Couper</system:String>
+    <system:String x:Key="tooltipCopy">Copier</system:String>
+    <system:String x:Key="tooltipPaste">Coller</system:String>
+    <system:String x:Key="tooltipUndo">Annuler</system:String>
+    <system:String x:Key="tooltipRedo">Rétablir</system:String>
+    <system:String x:Key="tooltipIncreaseIndent">Augmenter le retrait</system:String>
+    <system:String x:Key="tooltipDecreaseIndent">Diminuer le retrait</system:String>
+    <system:String x:Key="tooltipComment">Commenter les lignes sélectionnées</system:String>
+    <system:String x:Key="tooltipUncomment">Décommenter les lignes sélectionnées</system:String>
+
+
+    <system:String x:Key="btnStart">Démarrer</system:String>
+    <system:String x:Key="btnStop">Arrêter</system:String>
+    <system:String x:Key="tooltipStart">Exécuter le script</system:String>
+    <system:String x:Key="tooltipStop">Arrêter le script</system:String>
+
+    <system:String x:Key="techincalDoc">Manuel d’assemblage</system:String>
+    
+    <system:String x:Key="flashModes">Flasher des modes préprogrammés sur Rabot tels que : Évite Obstacles, Suiveur de Ligne, Amical, Obéissant</system:String>
+    <system:String x:Key="learnVisualProgramming">Apprendre la programmation visuelle : Lancez une interface de programmation par glisser-déposer (similaire à Scratch)</system:String>
+    <system:String x:Key="advancedPython">Programmation Python avancée : Lancez une interface de bloc-notes Python pour un codage avancé</system:String>
+
+    <!-- Programmation pour enfants (moins de 7 ans) -->
+    <system:String x:Key="kidsCard">Codage Enfants</system:String>
+    <system:String x:Key="kidsCardDesc">Pour les enfants de moins de 7 ans : créez un programme avec de grands blocs imagés – sans savoir lire.</system:String>
+    <system:String x:Key="kidsTitle">Codage Enfants</system:String>
+    <system:String x:Key="kidsHint">Touchez les blocs ci-dessous pour créer votre programme, puis appuyez sur Jouer !</system:String>
+    <system:String x:Key="kidsBlocks">Blocs</system:String>
+    <system:String x:Key="kidsRemoveTip">Touchez pour retirer</system:String>
+    <system:String x:Key="kidsTimes">fois</system:String>
+    <system:String x:Key="kidsPlay">Jouer</system:String>
+    <system:String x:Key="kidsClear">Effacer</system:String>
+
+    <!-- Codage (moins de 6 ans) – studio VPL -->
+    <system:String x:Key="vplCard">Codage (moins de 6 ans)</system:String>
+    <system:String x:Key="vplCardDesc">Pour les enfants de moins de 6 ans : associez un événement à une action — la façon visuelle de faire réagir CarthaBot.</system:String>
+
+    <!-- French -->
+    <system:String x:Key="step1Title">Étape 1</system:String>
+    <system:String x:Key="step1Desc">Allumez votre robot en appuyant sur l’interrupteur.</system:String>
+
+    <system:String x:Key="step2Title">Étape 2</system:String>
+    <system:String x:Key="step2Desc">Branchez le câble USB-C à votre robot et connectez-le à votre PC.</system:String>
+
+    <system:String x:Key="step3Title">Étape 3</system:String>
+    <system:String x:Key="step3Desc">Appuyez sur le bouton Boot (celui à l’arrière) et, tout en le maintenant enfoncé, appuyez sur le bouton Reset (celui de gauche). Relâchez d’abord le bouton Reset, puis le bouton Boot.</system:String>
+
+    <!-- Studio VPL (Codage moins de 6 ans) -->
+    <system:String x:Key="vplEventsTitle">Événements</system:String>
+    <system:String x:Key="vplActionsTitle">Actions</system:String>
+    <system:String x:Key="vplCompiledOk">Compilation terminée avec succès</system:String>
+    <system:String x:Key="vplEmptyTitle">Cliquez sur un Événement à gauche pour ajouter votre première règle</system:String>
+    <system:String x:Key="vplEmptyHint">Puis ajoutez une Action à droite — appuyez sur ▶ pour l'exécuter sur CarthaBot</system:String>
+    <system:String x:Key="vplConnected">CarthaBot connecté</system:String>
+    <system:String x:Key="vplNotConnected">CarthaBot non connecté</system:String>
+
+    <system:String x:Key="vplEvtButtons">Boutons</system:String>
+    <system:String x:Key="vplEvtObstacle">Obstacle</system:String>
+    <system:String x:Key="vplEvtLine">Ligne</system:String>
+    <system:String x:Key="vplEvtStart">Démarrage</system:String>
+    <system:String x:Key="vplActMove">Bouger</system:String>
+    <system:String x:Key="vplActColor">Couleur LED</system:String>
+    <system:String x:Key="vplActSound">Son</system:String>
+    <system:String x:Key="vplActWait">Attendre</system:String>
+
+    <system:String x:Key="vplHdrButton">BOUTON</system:String>
+    <system:String x:Key="vplHdrObstacle">OBSTACLE (AVANT)</system:String>
+    <system:String x:Key="vplHdrLine">LIGNE (SOL)</system:String>
+    <system:String x:Key="vplHdrStart">DÉMARRAGE</system:String>
+    <system:String x:Key="vplHdrMove">BOUGER</system:String>
+    <system:String x:Key="vplHdrColor">COULEUR LED</system:String>
+    <system:String x:Key="vplHdrSound">SON</system:String>
+    <system:String x:Key="vplHdrWait">ATTENDRE</system:String>
+
+    <system:String x:Key="vplDetected">Détecté</system:String>
+    <system:String x:Key="vplClearState">Libre</system:String>
+    <system:String x:Key="vplStartWhen">Au démarrage du programme</system:String>
+    <system:String x:Key="vplSpeed">Vitesse</system:String>
+    <system:String x:Key="vplMoveFollow">〰 Suivre la ligne</system:String>
+    <system:String x:Key="vplWaitSecs">Secondes</system:String>
+    <system:String x:Key="vplSoundBeep">Bip</system:String>
+    <system:String x:Key="vplSoundHappy">Joyeux</system:String>
+    <system:String x:Key="vplSoundSad">Triste</system:String>
+    <system:String x:Key="vplSoundSiren">Sirène</system:String>
+
+    <system:String x:Key="vplGenCode">MicroPython généré</system:String>
+    <system:String x:Key="vplCloseBtn">Fermer</system:String>
+    <system:String x:Key="vplSimTitle">Simulation 3D — CarthaBot</system:String>
+    <system:String x:Key="vplSimHint">Glisser pour tourner · molette pour zoomer</system:String>
+
+    <!-- Infobulles VPL -->
+    <system:String x:Key="vplTipNew">Nouveau</system:String>
+    <system:String x:Key="vplTipOpen">Ouvrir</system:String>
+    <system:String x:Key="vplTipSave">Enregistrer</system:String>
+    <system:String x:Key="vplTipUndo">Annuler</system:String>
+    <system:String x:Key="vplTipRun">Compiler et exécuter</system:String>
+    <system:String x:Key="vplTipStop">Arrêter</system:String>
+    <system:String x:Key="vplTipConnect">Se connecter à CarthaBot</system:String>
+    <system:String x:Key="vplTipCode">Afficher le code</system:String>
+    <system:String x:Key="vplTipInfo">À propos</system:String>
+    <system:String x:Key="vplTipScreenshot">Capture d'écran</system:String>
+    <system:String x:Key="vplTipTheme">Basculer clair / sombre</system:String>
+    <system:String x:Key="vplTipHome">Retour au menu</system:String>
+    <system:String x:Key="vplAddAction">ajouter</system:String>
+
+    <!-- Messages d'état VPL -->
+    <system:String x:Key="vplStPickAction">Choisissez maintenant une action à droite ➜</system:String>
+    <system:String x:Key="vplStEventFirst">Ajoutez d'abord un événement (à gauche), puis une action</system:String>
+    <system:String x:Key="vplStReady">CarthaBot est prêt</system:String>
+    <system:String x:Key="vplStPlug">Branchez CarthaBot et allumez-le</system:String>
+    <system:String x:Key="vplStRunning">CarthaBot exécute votre programme ▶</system:String>
+    <system:String x:Key="vplStStopped">Arrêté</system:String>
+    <system:String x:Key="vplStNothing">Rien à exécuter — ajoutez d'abord une règle</system:String>
+    <system:String x:Key="vplStNew">Nouveau programme</system:String>
+    <system:String x:Key="vplStEmpty">Cliquez sur un Événement à gauche pour ajouter votre première règle</system:String>
+
+    <!-- VPL mode avancé : minuteur + mémoire (état) -->
+    <system:String x:Key="vplEvtTimer">Le minuteur sonne</system:String>
+    <system:String x:Key="vplActAnim">Jeu de lumière</system:String>
+    <system:String x:Key="vplActTimer">Lancer le minuteur</system:String>
+    <system:String x:Key="vplActState">Mémoire</system:String>
+    <system:String x:Key="vplHdrTimerEvt">MINUTEUR SONNE</system:String>
+    <system:String x:Key="vplHdrAnim">JEU DE LUMIÈRE</system:String>
+    <system:String x:Key="vplHdrTimer">LANCER MINUTEUR</system:String>
+    <system:String x:Key="vplHdrState">MÉMOIRE</system:String>
+    <system:String x:Key="vplTimerWhen">Quand le minuteur sonne</system:String>
+    <system:String x:Key="vplTimerSecs">Sonne après (secondes)</system:String>
+    <system:String x:Key="vplOnlyWhen">seulement en se souvenant de</system:String>
+    <system:String x:Key="vplAnyState">Toujours</system:String>
+    <system:String x:Key="vplStateHint">CarthaBot se souvient d'une forme</system:String>
+    <system:String x:Key="vplTipAdvanced">Mode avancé — débloquer Minuteur et Mémoire</system:String>
+    <system:String x:Key="vplStAdvOn">Mode avancé — Minuteur et Mémoire débloqués ✨</system:String>
+    <system:String x:Key="vplStAdvOff">Mode simple</system:String>
+
+    <!-- Carte son VPL : la mélodie de l'enfant -->
+    <system:String x:Key="vplSoundMyTune">♫ Ma mélodie</system:String>
+    <system:String x:Key="vplPlayTune">Écouter</system:String>
+
+    <!-- Noms des animations VPL -->
+    <system:String x:Key="vplAnimRainbow">🌈 Arc-en-ciel</system:String>
+    <system:String x:Key="vplAnimBlink">✦ Clignoter</system:String>
+    <system:String x:Key="vplAnimChase">➤ Poursuite</system:String>
+    <system:String x:Key="vplAnimBreathe">◗ Respirer</system:String>
+
+    <!-- Simulateur + missions VPL -->
+    <system:String x:Key="vplTipMute">Sons activés / coupés</system:String>
+    <system:String x:Key="vplTipMissions">Missions — gagnez des étoiles dans l'aire de jeu 3D</system:String>
+    <system:String x:Key="vplMissionsTitle">Missions</system:String>
+    <system:String x:Key="vplMissionsHint">Construisez d'abord vos règles, puis choisissez une mission et appuyez sur les boutons !</system:String>
+    <system:String x:Key="vplSimPad">Boutons de CarthaBot</system:String>
+    <system:String x:Key="vplSimFollow">Suivre CarthaBot avec la caméra</system:String>
+    <system:String x:Key="vplSimDisco">Mode disco — on éteint les lumières !</system:String>
+    <system:String x:Key="vplSimRealBtns">Appuyez sur les boutons du vrai CarthaBot</system:String>
+    <system:String x:Key="vplSimLiveTitle">EN DIRECT — reflet du vrai CarthaBot</system:String>
+    <system:String x:Key="vplSimLiveHint">Le robot 3D bouge avec ton vrai robot en temps réel</system:String>
+    <system:String x:Key="vplTipLive">En direct — exécute sur CarthaBot et regarde son jumeau 3D bouger</system:String>
+    <system:String x:Key="vplStLive">En direct ! CarthaBot et son jumeau 3D bougent ensemble 📡</system:String>
+    <system:String x:Key="vplMisDone">Mission accomplie !</system:String>
+    <system:String x:Key="vplMisDoneHint">CarthaBot est très fier de toi !</system:String>
+    <system:String x:Key="vplMisGlow">Allume la lumière !</system:String>
+    <system:String x:Key="vplMisGlowHint">Fais briller CarthaBot en VERT quand tu appuies sur un bouton</system:String>
+    <system:String x:Key="vplMisFlag">Course au drapeau !</system:String>
+    <system:String x:Key="vplMisFlagHint">Conduis CarthaBot jusqu'au drapeau à damier</system:String>
+    <system:String x:Key="vplMisWall">Stop avant le mur !</system:String>
+    <system:String x:Key="vplMisWallHint">Arrête-toi quand CarthaBot voit la brique orange — sans la toucher !</system:String>
+    <system:String x:Key="vplMisCoins">Chasse aux pièces !</system:String>
+    <system:String x:Key="vplMisCoinsHint">Roule sur les trois pièces d'or</system:String>
+    <system:String x:Key="vplMisParty">Fête arc-en-ciel !</system:String>
+    <system:String x:Key="vplMisPartyHint">Atteins le drapeau avec l'arc-en-ciel allumé</system:String>
+    <system:String x:Key="vplMisLine">Suis la ligne !</system:String>
+    <system:String x:Key="vplMisLineHint">Sur la ligne ➜ avance · hors de la ligne ➜ tourne — fais le tour complet !</system:String>
+    <system:String x:Key="vplStUndone">Annulé ↶</system:String>
+
+</ResourceDictionary>

@@ -1,0 +1,301 @@
+﻿<UserControl x:Class="MazeProject.Views.MazeMainView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prism="http://prismlibrary.com/"    
+             xmlns:iconpacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:controls="clr-namespace:DMSkin.WPF.Controls;assembly=DMSkin.WPF"
+             xmlns:models="clr-namespace:MazeProject.Models"
+             xmlns:local="clr-namespace:MazeProject.Views"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf" 
+
+             prism:ViewModelLocator.AutoWireViewModel="True">
+    <UserControl.Resources>
+        <local:PathToImageSourceConverter x:Key="PathToImageSourceConverter" />
+    </UserControl.Resources>
+
+    <Grid Background="#192428" Margin="10 5">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.5*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="auto"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid  VerticalAlignment="Top">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Vertical">
+                <TextBlock Text="Etapes"  HorizontalAlignment="Center" Foreground="#FFFFFFFF" FontWeight="DemiBold" FontSize="30" Margin="0"/>
+                <TextBlock  Foreground="#FFFFFFFF" HorizontalAlignment="Center" FontWeight="DemiBold" FontSize="25" Margin="0">
+                    <Run Text="{Binding PlayingRobot.CurrentStep}" />
+                    <Run Text="/" />
+                    <Run Text="{Binding PlayingRobot.MaxSteps}" />
+                </TextBlock>
+            </StackPanel>
+            <Border BorderBrush="#FFFFFFFF" Background="#2d383c" Grid.Row="1"  BorderThickness="1" VerticalAlignment="Center" CornerRadius="5">
+                <ScrollViewer Margin="1">
+                    <ItemsControl Grid.Row="1"  ItemsSource="{Binding PlayingRobot.Mouvments}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="5" Rows="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="100" Cursor="Hand"
+                                        Height="100" Margin="5"
+                                        CornerRadius="2" BorderBrush="black"
+                                        BorderThickness="0" VerticalAlignment="Stretch">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#0060ac"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Mvt}" Value="None">
+                                                    <Setter Property="Background" Value="#414c50"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <iconpacks:PackIconEvaIcons  VerticalAlignment="Center" HorizontalAlignment="Center"  Width="35" Height="35" Foreground="White">
+                                            <iconpacks:PackIconEvaIcons.Style>
+                                                <Style TargetType="iconpacks:PackIconEvaIcons">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Mvt}" Value="Left">
+                                                            <Setter Property="Kind" Value="CornerUpLeft"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Mvt}" Value="Right">
+                                                            <Setter Property="Kind" Value="CornerUpRight"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Mvt}" Value="Forward">
+                                                            <Setter Property="Kind" Value="ArrowUp"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Mvt}" Value="Backward">
+                                                            <Setter Property="Kind" Value="ArrowDown"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </iconpacks:PackIconEvaIcons.Style>
+                                        </iconpacks:PackIconEvaIcons>
+                                        <Border VerticalAlignment="Top" HorizontalAlignment="left" Width="25" Height="25" Background="#414c50" CornerRadius="0 0 5 0">
+                                            <Viewbox>
+                                                <TextBlock Text="{Binding Id}" Foreground="White" FontSize="30" FontWeight="Bold"  Margin="5"/>
+
+                                            </Viewbox>
+                                        </Border>
+
+                                    </Grid>
+
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </ScrollViewer>
+            </Border>
+            <StackPanel Orientation="Vertical" Grid.Row="2" Margin="0 10 0 5">
+                <TextBlock Text="Maps"  HorizontalAlignment="Center" Foreground="#FFFFFFFF" FontWeight="DemiBold" FontSize="30" Margin="0"/>
+            </StackPanel>
+            <Border BorderBrush="#FFFFFFFF" Margin=" 0 0 10 0" Background="#2d383c" Grid.Row="3"  BorderThickness="1" VerticalAlignment="Center" CornerRadius="5">
+                <syncfusion:Carousel
+                    Cursor="Hand"
+                    Grid.Row="1"
+                    EnableRotationAnimation="True"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    x:Name="carousel"
+                    ItemsPerPage="3"
+                    EnableLooping="False"
+                    ItemsSource="{Binding MapList}"
+                    SelectedIndex="{Binding SelectedIndex}"
+                    OpacityFraction="0.1"
+                    VisualMode="CustomPath"
+                    RotationSpeed="1">
+                    <!-- Set the duration to 1 second -->
+                    <syncfusion:Carousel.Path>
+
+                        <Path Data="M0,300 L600,300"/>
+                    </syncfusion:Carousel.Path>
+                    <syncfusion:Carousel.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="{Binding Name}" FontSize="29" FontWeight="DemiBold"/>
+                                <Border BorderBrush="green"  BorderThickness="3">
+                                    <Grid 
+                                        Background="White">
+                                        <Image
+                                            Width="150" Height="250"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Source="{Binding ImagePath}" />
+                                        <controls:DMButton VerticalAlignment="Center" Command="{Binding SelectedCommand}" Background="Transparent" BorderBrush="Transparent" HorizontalAlignment="Center" >
+                                            <Border Background="#0060ac" CornerRadius="10" >
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFirst}" Value="true">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="Select" Foreground="White" Padding="10 5" FontWeight="DemiBold" FontSize="20"/>
+                                            </Border>
+                                        </controls:DMButton>
+                                    </Grid>
+                                </Border>
+
+                            </StackPanel>
+
+                        </DataTemplate>
+                    </syncfusion:Carousel.ItemTemplate>
+                </syncfusion:Carousel>
+            </Border>
+
+        </Grid>
+        <Border Grid.Column="1"  VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                <Border BorderThickness="3" BorderBrush="White" >
+                    <Grid VerticalAlignment="Center" HorizontalAlignment="Center"  Background="White">
+                        <Image x:Name="MyImage" Source="{Binding SelectedMap.ImagePath}" Loaded="MyImage_Loaded" SizeChanged="MyImage_SizeChanged" >
+
+                        </Image>
+                        <ItemsControl Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" ItemsSource="{Binding SelectedMap.FlatMapGrid}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="{Binding SelectedMap.ColumnsNumber}" Rows="{Binding SelectedMap.RowNumber}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border   VerticalAlignment="Center" Background="Transparent"  HorizontalAlignment="Center" 
+                                         BorderBrush="Black"
+                                         BorderThickness="1" >
+                                        <Grid >
+                                            <!--<iconpacks:PackIconEvaIcons Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="50" Height="50" Foreground="red">
+                                                <iconpacks:PackIconEvaIcons.Style>
+                                                    <Style TargetType="iconpacks:PackIconEvaIcons">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding CellT}" Value="None">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding CellT}" Value="IsStart">
+                                                                <Setter Property="Kind" Value="s"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding CellT}" Value="IsFinish">
+                                                                <Setter Property="Kind" Value="Star"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </iconpacks:PackIconEvaIcons.Style>
+                                            </iconpacks:PackIconEvaIcons>-->
+                                            <Image  Source="{Binding RobotImagePath}"  Width="{Binding Width}" Height="{Binding Height}"  VerticalAlignment="Center"  HorizontalAlignment="Center" >
+                                                <Image.Style>
+                                                    <Style TargetType="Image">
+                                                        <Setter Property="Visibility" Value="Hidden"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsThere}" Value="true">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+
+                                        </Grid>
+                                    </Border>
+
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+
+                <StackPanel Orientation="Vertical"  Grid.Column="2"  VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10">
+                    <StackPanel Orientation="Horizontal">
+                        <Border BorderBrush="#FFFFFFFF" Background="#2d383c" Width="250" Height="250" BorderThickness="2" CornerRadius="5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1*"/>
+                                    <ColumnDefinition Width="1*"/>
+                                    <ColumnDefinition Width="1*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="1*"/>
+                                    <RowDefinition Height="1*"/>
+                                    <RowDefinition Height="1*"/>
+                                </Grid.RowDefinitions>
+
+                                <controls:DMButton Command="{Binding GoForwardCommand}" Grid.Row="0" Grid.Column="1" Cursor="Hand" BorderBrush="Transparent" Background="Transparent">
+                                    <Border Background="#0060ac" CornerRadius="15">
+                                        <iconpacks:PackIconEvaIcons  Kind="ArrowUp" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="50" Height="50" Foreground="White" />
+                                    </Border>
+                                </controls:DMButton>
+                                <controls:DMButton Cursor="Hand" Command="{Binding GoLeftCommand}"  Grid.Row="1" Grid.Column="0" BorderBrush="Transparent" Background="Transparent">
+                                    <Border Background="#0060ac" CornerRadius="15">
+                                        <iconpacks:PackIconEvaIcons  Kind="CornerUpLeft" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="50" Height="50" Foreground="White" />
+                                    </Border>
+                                </controls:DMButton>
+                                <controls:DMButton Cursor="Hand" Command="{Binding GoRightCommand}" Grid.Row="1" Grid.Column="2" BorderBrush="Transparent" Background="Transparent">
+                                    <Border Background="#0060ac" CornerRadius="15">
+                                        <iconpacks:PackIconEvaIcons  Kind="CornerUpRight" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="50" Height="50" Foreground="White" />
+                                    </Border>
+                                </controls:DMButton>
+                                <controls:DMButton Cursor="Hand" Command="{Binding GoBackwardCommand}"  Grid.Row="2" Grid.Column="1" BorderBrush="Transparent" Background="Transparent">
+                                    <Border Background="#0060ac" CornerRadius="15">
+                                        <iconpacks:PackIconEvaIcons  Kind="ArrowDown" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="50" Height="50" Foreground="White" />
+                                    </Border>
+                                </controls:DMButton>
+
+
+                            </Grid>
+                        </Border>
+
+                        <controls:DMButton Command="{Binding SendCommand}" Grid.Row="0" Margin="10 0 0 0" VerticalAlignment="Center" Grid.Column="1" Cursor="Hand" BorderBrush="Transparent" Background="Transparent">
+                            <Border Background="#0060ac" CornerRadius="15">
+                                <iconpacks:PackIconEvaIcons  Kind="PlayCircle" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="70" Height="70" Foreground="White" />
+                            </Border>
+                        </controls:DMButton>
+                    </StackPanel>
+                    <controls:DMButton Cursor="Hand" Command="{Binding ClearCommand}"  Grid.Row="1" Grid.Column="0" HorizontalAlignment="left" BorderBrush="Transparent" Background="Transparent">
+                        <Border Background="#0060ac" CornerRadius="15" Margin="5">
+                            <TextBlock Text="Clear" Foreground="White" Padding="10 5" FontSize="25" FontWeight="DemiBold"/>
+
+                        </Border>
+                    </controls:DMButton>
+                </StackPanel>
+
+
+            </StackPanel>
+
+
+        </Border>
+
+
+
+        <Button Command="{Binding CloseViewCommand}" Cursor="Hand" Margin="20 0"  
+                                    VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                                    Width="50" Height="50"
+                                    Background="Transparent" BorderThickness="3" BorderBrush="Wheat">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="25">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Button.Template>
+            <iconpacks:PackIconCoolicons Kind="House01" Foreground="Wheat"
+                                                     Height="30" Width="30"/>
+        </Button>
+    </Grid>
+</UserControl>

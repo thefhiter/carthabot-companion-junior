@@ -1,0 +1,176 @@
+<UserControl x:Class="CompanionApp.Controls.RobotSimulator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:h="http://helix-toolkit.org/wpf">
+    <UserControl.Resources>
+        <!-- translucent HUD chip -->
+        <Style x:Key="HudChip" TargetType="Border">
+            <Setter Property="Background" Value="#66101A1F" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Padding" Value="9 4" />
+            <Setter Property="Margin" Value="0 0 6 0" />
+        </Style>
+        <!-- round D-pad button -->
+        <Style x:Key="PadButton" TargetType="Button">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#CCEE7B2F" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse x:Name="e" Fill="{TemplateBinding Background}" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="e" Property="Fill" Value="#FFFFB04D" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="e" Property="Opacity" Value="0.92" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <h:HelixViewport3D x:Name="View"
+                           ShowViewCube="False"
+                           ShowCoordinateSystem="False"
+                           ShowFrameRate="False"
+                           IsHeadLightEnabled="False"
+                           ZoomExtentsWhenLoaded="False">
+            <h:HelixViewport3D.Background>
+                <!-- daytime sky: deep blue up high fading to a warm teal horizon -->
+                <LinearGradientBrush x:Name="SkyBrush" StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop x:Name="SkyTop" Color="#0B1B33" Offset="0" />
+                    <GradientStop x:Name="SkyMid" Color="#14334A" Offset="0.55" />
+                    <GradientStop x:Name="SkyLow" Color="#1B4A50" Offset="1" />
+                </LinearGradientBrush>
+            </h:HelixViewport3D.Background>
+            <h:HelixViewport3D.Camera>
+                <PerspectiveCamera Position="0,-27,21" LookDirection="0,27,-19" UpDirection="0,0,1" FieldOfView="48" />
+            </h:HelixViewport3D.Camera>
+            <!-- controllable scene lights (the 🌙 disco toggle dims them) -->
+            <ModelVisual3D>
+                <ModelVisual3D.Content>
+                    <Model3DGroup>
+                        <AmbientLight x:Name="SceneAmbient" Color="#5A5F66" />
+                        <DirectionalLight x:Name="SceneKey" Color="#E8E8E8" Direction="-0.4,0.7,-1.0" />
+                        <DirectionalLight x:Name="SceneFill" Color="#6A7077" Direction="0.7,-0.4,-0.6" />
+                    </Model3DGroup>
+                </ModelVisual3D.Content>
+            </ModelVisual3D>
+            <ModelVisual3D x:Name="CloudHost" />
+            <ModelVisual3D x:Name="WorldHost" />
+            <ModelVisual3D x:Name="ObstacleHost" />
+            <ModelVisual3D x:Name="GoalHost" />
+            <ModelVisual3D x:Name="CoinsHost" />
+            <ModelVisual3D x:Name="Halo" />
+            <ModelVisual3D x:Name="RobotHost" />
+        </h:HelixViewport3D>
+
+        <!-- confetti for mission success (drawn over the 3D view, never blocks input) -->
+        <Canvas x:Name="ConfettiLayer" IsHitTestVisible="False" ClipToBounds="True" />
+
+        <!-- chase-camera + disco toggles -->
+        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 10 12 0">
+            <StackPanel.Resources>
+                <Style x:Key="RoundToggle" TargetType="Button">
+                    <Setter Property="Width" Value="38" />
+                    <Setter Property="Height" Value="38" />
+                    <Setter Property="Margin" Value="0 0 0 8" />
+                    <Setter Property="Cursor" Value="Hand" />
+                    <Setter Property="Background" Value="#66101A1F" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Grid>
+                                    <Ellipse Fill="{TemplateBinding Background}" />
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#99101A1F" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </StackPanel.Resources>
+            <Button x:Name="FollowBtn" Style="{StaticResource RoundToggle}" Click="OnToggleFollow" ToolTip="{DynamicResource vplSimFollow}">
+                <TextBlock x:Name="FollowGlyph" Text="🎥" FontSize="15" Opacity="0.55" />
+            </Button>
+            <Button x:Name="DiscoBtn" Style="{StaticResource RoundToggle}" Click="OnToggleDisco" ToolTip="{DynamicResource vplSimDisco}">
+                <TextBlock x:Name="DiscoGlyph" Text="🌙" FontSize="15" Opacity="0.55" />
+            </Button>
+        </StackPanel>
+
+        <!-- mission banner -->
+        <Border x:Name="MissionBanner" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0 10 0 0"
+                CornerRadius="12" Padding="14 7" Background="#AA15222A" Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="MissionGlyph" Text="🏁" FontSize="20" VerticalAlignment="Center" Margin="0 0 9 0" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="MissionTitle" Text="" Foreground="White" FontSize="14" FontWeight="Bold" />
+                    <TextBlock x:Name="MissionHint" Text="" Foreground="#B9C9D1" FontSize="11.5" />
+                </StackPanel>
+                <TextBlock x:Name="MissionStar" Text="⭐" FontSize="22" VerticalAlignment="Center" Margin="12 0 0 0"
+                           Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                    <TextBlock.RenderTransform><ScaleTransform x:Name="StarScale" ScaleX="1" ScaleY="1" /></TextBlock.RenderTransform>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- sensor / state HUD -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12 0 0 12">
+            <Border Style="{StaticResource HudChip}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="🚧" FontSize="13" Margin="0 0 4 0" />
+                    <Ellipse x:Name="FrontDot" Width="10" Height="10" Fill="#444" VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource HudChip}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="〰" FontSize="13" Margin="0 0 4 0" Foreground="White" />
+                    <Ellipse x:Name="LineDot" Width="10" Height="10" Fill="#444" VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+            <Border x:Name="StateChip" Style="{StaticResource HudChip}" Visibility="Collapsed">
+                <TextBlock x:Name="StateGlyph" Text="★" FontSize="13" Foreground="#F2C94C" />
+            </Border>
+            <Border x:Name="CoinChip" Style="{StaticResource HudChip}" Visibility="Collapsed">
+                <TextBlock x:Name="CoinText" Text="🪙 0/3" FontSize="12" Foreground="White" />
+            </Border>
+        </StackPanel>
+
+        <!-- on-screen CarthaBot buttons (fire the Button events in the simulation) -->
+        <Grid HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 14 10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="PadHint" Grid.Row="0" Grid.ColumnSpan="3" Text="" Foreground="#7E919B" FontSize="10.5"
+                       HorizontalAlignment="Center" Margin="0 0 0 4" />
+            <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource PadButton}" Content="▲" Tag="Up"
+                    PreviewMouseLeftButtonDown="PadDown" PreviewMouseLeftButtonUp="PadUp" MouseLeave="PadLeave" />
+            <Button Grid.Row="2" Grid.Column="0" Style="{StaticResource PadButton}" Content="◀" Tag="Left"
+                    PreviewMouseLeftButtonDown="PadDown" PreviewMouseLeftButtonUp="PadUp" MouseLeave="PadLeave" />
+            <Button Grid.Row="2" Grid.Column="1" Style="{StaticResource PadButton}" Content="●" Tag="Center"
+                    PreviewMouseLeftButtonDown="PadDown" PreviewMouseLeftButtonUp="PadUp" MouseLeave="PadLeave" />
+            <Button Grid.Row="2" Grid.Column="2" Style="{StaticResource PadButton}" Content="▶" Tag="Right"
+                    PreviewMouseLeftButtonDown="PadDown" PreviewMouseLeftButtonUp="PadUp" MouseLeave="PadLeave" />
+            <Button Grid.Row="3" Grid.Column="1" Style="{StaticResource PadButton}" Content="▼" Tag="Down"
+                    PreviewMouseLeftButtonDown="PadDown" PreviewMouseLeftButtonUp="PadUp" MouseLeave="PadLeave" />
+        </Grid>
+    </Grid>
+</UserControl>
