@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BehaveProject", "BehaveProj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdvancedProgramming", "AdvancedProgramming\AdvancedProgramming.csproj", "{A5C58516-C938-4411-95EC-CE34C4E52420}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CarthaBotTransport", "CarthaBotTransport\CarthaBotTransport.csproj", "{C7A1B2D3-4E5F-6A7B-8C9D-0E1F2A3B4C5D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{A5C58516-C938-4411-95EC-CE34C4E52420}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5C58516-C938-4411-95EC-CE34C4E52420}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5C58516-C938-4411-95EC-CE34C4E52420}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7A1B2D3-4E5F-6A7B-8C9D-0E1F2A3B4C5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7A1B2D3-4E5F-6A7B-8C9D-0E1F2A3B4C5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7A1B2D3-4E5F-6A7B-8C9D-0E1F2A3B4C5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7A1B2D3-4E5F-6A7B-8C9D-0E1F2A3B4C5D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -171,6 +171,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- repeat stepper -->
@@ -211,8 +212,21 @@
                     </StackPanel>
                 </Border>
 
+                <!-- STOP -->
+                <Border Grid.Column="3" CornerRadius="16" Background="#EB5757" Padding="30 14" Margin="0 0 12 0" Cursor="Hand" VerticalAlignment="Center">
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="MouseLeftButtonDown">
+                            <i:InvokeCommandAction Command="{Binding StopCommand}"/>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <iconpack:PackIconFontAwesome Kind="StopSolid" Width="22" Height="22" Foreground="White" VerticalAlignment="Center"/>
+                        <TextBlock Text="{DynamicResource kidsStop}" Foreground="White" FontSize="22" FontWeight="Bold" Margin="12 0 0 0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- CLEAR -->
-                <Border Grid.Column="3" CornerRadius="16" Background="#3c4a50" Padding="22 14" Cursor="Hand" VerticalAlignment="Center">
+                <Border Grid.Column="4" CornerRadius="16" Background="#3c4a50" Padding="22 14" Cursor="Hand" VerticalAlignment="Center">
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="MouseLeftButtonDown">
                             <i:InvokeCommandAction Command="{Binding ClearCommand}"/>

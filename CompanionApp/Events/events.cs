@@ -20,4 +20,12 @@ namespace CompanionApp.Events
     // Raised by the embedded VPL (Coding under-6) view when the child closes it.
     public class VplCloseEvent : PubSubEvent { }
 
+    // Raised by the "Draw with a pen" plotter view when the child closes it.
+    public class DrawCloseEvent : PubSubEvent { }
+
+    // Raised by a module's in-view connection picker when the user asks for Wi-Fi but the
+    // robot was never put on Wi-Fi from this PC — the shell opens the "Connect CarthaBot
+    // to your Wi-Fi" registration screen on top of the module.
+    public class OpenWifiSetupEvent : PubSubEvent { }
+
 }

@@ -53,6 +53,8 @@ namespace CompanionApp.ViewModels
             // even though the "Kids Coding" card itself was removed from the grid (replaced by the Companion VPL).
             Atelier.Add(new CarthaModule("KidsCoding", $"{folderPath}/mod.png", "#2bc0e8", "Kids Coding (under 7)", Module.KidsCoding, _eventAggregator));
             Atelier.Add(new CarthaModule("VplJunior", $"{folderPath}/mod.png", "#EE7B2F", "Coding (under 6)", Module.VplJunior, _eventAggregator));
+            // Draw with a pen — turtle plotter. Kept at index [5] (the DrawCard binds Atelier[5] in AtelierView.xaml).
+            Atelier.Add(new CarthaModule("Draw", $"{folderPath}/mod.png", "#E84393", "Draw with a pen", Module.Draw, _eventAggregator));
             //Atelier.Add(new CarthaModule("Explore", $"{folderPath}/mod.png", "#7359fa", "Explore", Module.Explore, _eventAggregator));
             //Atelier.Add(new CarthaModule("Tracer", $"{folderPath}/mod.png", "#EB5A3C", "Tracer", Module.Tracer, _eventAggregator));
 

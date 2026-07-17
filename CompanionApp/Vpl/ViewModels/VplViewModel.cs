@@ -29,7 +29,7 @@ namespace CarthaBotVPL.ViewModels
     {
         private readonly IEventAggregator _eventAggregator;
         private readonly List<string> _oldComs;
-        private SerialPort _port;
+        private ITransport _transport;
 
         // live telemetry reader (digital twin)
         private Thread _reader;
@@ -60,7 +60,28 @@ namespace CarthaBotVPL.ViewModels
 
         private bool _isConnected;
         public bool IsConnected { get => _isConnected; set { if (Set(ref _isConnected, value)) Raise(nameof(ConnectionText)); } }
-        public string ConnectionText => IsConnected ? "CarthaBot connected" : "CarthaBot not connected";
+        public string ConnectionText => IsConnected
+            ? L("vplConnConnected", "CarthaBot connected") + " (" + Mode + ")"
+            : L("vplConnNotConnected", "CarthaBot not connected");
+
+        // ---- Connection method (USB / WiFi) ----
+        private ConnectionMode _mode = ConnectionMode.Usb;
+        public ConnectionMode Mode
+        {
+            get => _mode;
+            set { if (Set(ref _mode, value)) { Raise(nameof(IsUsb)); Raise(nameof(IsWifi)); Raise(nameof(ConnectionText)); } }
+        }
+        public bool IsUsb => Mode == ConnectionMode.Usb;
+        public bool IsWifi => Mode == ConnectionMode.Wifi;
+
+        private string _wifiEndpoint = "carthabot.local:3333";
+        public string WifiEndpoint { get => _wifiEndpoint; set => Set(ref _wifiEndpoint, value); }
+
+        private bool _connectPanelOpen;
+        public bool ConnectPanelOpen { get => _connectPanelOpen; set => Set(ref _connectPanelOpen, value); }
+
+        private bool _busy;
+        public bool Busy { get => _busy; set => Set(ref _busy, value); }
 
         private bool _showCode;
         public bool ShowCode { get => _showCode; set => Set(ref _showCode, value); }
@@ -82,10 +103,13 @@ namespace CarthaBotVPL.ViewModels
         public ICommand PlayLiveCommand { get; }
         public ICommand StopCommand { get; }
         public ICommand ConnectCommand { get; }
+        public ICommand DisconnectCommand { get; }
+        public ICommand ToggleConnectPanelCommand { get; }
         public ICommand InfoCommand { get; }
         public ICommand ToggleCodeCommand { get; }
         public ICommand ToggleAdvancedCommand { get; }
         public ICommand CloseCommand { get; }
+        public ICommand OpenWifiSetupCommand { get; }
 
         /// <summary>Look up a localized string from the app-level resource dictionaries (falls back to English).</summary>
         private static string L(string key, string fallback) =>
@@ -98,9 +122,16 @@ namespace CarthaBotVPL.ViewModels
         public ICommand RemoveActionCommand { get; }
 
         public VplViewModel(IEventAggregator eventAggregator, List<string> oldComs)
+            : this(eventAggregator, oldComs, ConnectionMode.Usb, null) { }
+
+        public VplViewModel(IEventAggregator eventAggregator, List<string> oldComs, ConnectionMode mode, string param)
         {
             _eventAggregator = eventAggregator;
             _oldComs = oldComs ?? new List<string>();
+
+            // Start in the connection mode the host chooser picked.
+            _mode = mode;
+            if (mode == ConnectionMode.Wifi && !string.IsNullOrWhiteSpace(param)) _wifiEndpoint = param;
 
             Rules.CollectionChanged += (s, e) => { Reindex(); Raise(nameof(HasRules)); };
 
@@ -112,6 +143,8 @@ namespace CarthaBotVPL.ViewModels
             PlayLiveCommand = new RelayCommand(PlayLive);
             StopCommand = new RelayCommand(Stop);
             ConnectCommand = new RelayCommand(Connect);
+            DisconnectCommand = new RelayCommand(() => { CloseSerial(); ConnectPanelOpen = false; Status = L("vplStStopped", "Disconnected"); });
+            ToggleConnectPanelCommand = new RelayCommand(() => ConnectPanelOpen = !ConnectPanelOpen);
             InfoCommand = new RelayCommand(ShowInfo);
             ToggleCodeCommand = new RelayCommand(() => { Compile(); ShowCode = !ShowCode; });
             ToggleAdvancedCommand = new RelayCommand(() =>
@@ -121,6 +154,7 @@ namespace CarthaBotVPL.ViewModels
                                       : L("vplStAdvOff", "Simple mode");
             });
             CloseCommand = new RelayCommand(Close);
+            OpenWifiSetupCommand = new RelayCommand(() => { ConnectPanelOpen = false; _eventAggregator.GetEvent<OpenWifiSetupEvent>().Publish(); });
 
             Status = L("vplStEmpty", _status);
 
@@ -195,18 +229,24 @@ namespace CarthaBotVPL.ViewModels
             if (Rules.Count == 0) { Status = L("vplStNothing", "Nothing to run — add a rule first"); return; }
             var code = Compile();
 
-            if (_port == null || !_port.IsOpen) Connect();
-            if (_port == null || !_port.IsOpen) { Status = L("vplStPlug", "Plug in CarthaBot and turn it on"); return; }
+            if (!await EnsureConnectedAsync()) { Status = L("vplStPlug", "Plug in CarthaBot and turn it on"); return; }
 
             try
             {
-                _port.Write(new byte[] { 0x03 }, 0, 1); // Ctrl-C
-                await Task.Delay(80);
-                _port.Write(new byte[] { 0x05 }, 0, 1); // Ctrl-E -> paste mode
-                await Task.Delay(80);
                 byte[] payload = Encoding.ASCII.GetBytes(code.Replace("\r\n", "\n") + "\n");
-                _port.Write(payload, 0, payload.Length);
-                _port.Write(new byte[] { 0x04 }, 0, 1); // Ctrl-D -> run
+                // Recover the link: a back-pressured bridge only unblocks once we READ; drain + Ctrl-C
+                // repeatedly so the interrupt lands and the next program isn't ignored.
+                for (int k = 0; k < 3; k++)
+                {
+                    try { _transport.ReadExisting(); } catch { }
+                    await _transport.WriteAsync(new byte[] { 0x03 }); // Ctrl-C
+                    await Task.Delay(60);
+                }
+                try { _transport.ReadExisting(); } catch { }
+                await _transport.WriteAsync(new byte[] { 0x05 }); // Ctrl-E -> paste mode
+                await Task.Delay(80);
+                await _transport.WriteAsync(payload);
+                await _transport.WriteAsync(new byte[] { 0x04 }); // Ctrl-D -> run
                 Status = L("vplStRunning", "CarthaBot is running your program ▶");
             }
             catch (Exception ex) { Status = "Oops, try again"; System.Diagnostics.Debug.WriteLine(ex.Message); }
@@ -220,19 +260,26 @@ namespace CarthaBotVPL.ViewModels
             GeneratedCode = VplCompiler.Generate(Rules, telemetry: true);
             CompiledOk = true;
 
-            if (_port == null || !_port.IsOpen) Connect();
-            if (_port == null || !_port.IsOpen) { Status = L("vplStPlug", "Plug in CarthaBot and turn it on"); return; }
+            if (!await EnsureConnectedAsync()) { Status = L("vplStPlug", "Plug in CarthaBot and turn it on"); return; }
 
             try
             {
                 StopReader();
-                _port.Write(new byte[] { 0x03 }, 0, 1); // Ctrl-C
-                await Task.Delay(80);
-                _port.Write(new byte[] { 0x05 }, 0, 1); // Ctrl-E -> paste mode
-                await Task.Delay(80);
                 byte[] payload = Encoding.ASCII.GetBytes(GeneratedCode.Replace("\r\n", "\n") + "\n");
-                _port.Write(payload, 0, payload.Length);
-                _port.Write(new byte[] { 0x04 }, 0, 1); // Ctrl-D -> run
+                // Recover the link first: a back-pressured bridge only unblocks once we READ, so
+                // drain + Ctrl-C a few times so the interrupt lands and the previous program really
+                // stops before we paste the new one (same fix as the plain ▶ path).
+                for (int k = 0; k < 3; k++)
+                {
+                    try { _transport.ReadExisting(); } catch { }
+                    await _transport.WriteAsync(new byte[] { 0x03 }); // Ctrl-C
+                    await Task.Delay(60);
+                }
+                try { _transport.ReadExisting(); } catch { }
+                await _transport.WriteAsync(new byte[] { 0x05 }); // Ctrl-E -> paste mode
+                await Task.Delay(80);
+                await _transport.WriteAsync(payload);
+                await _transport.WriteAsync(new byte[] { 0x04 }); // Ctrl-D -> run
                 StartReader();
                 Status = L("vplStLive", "Live! CarthaBot and its 3D twin are moving together 📡");
             }
@@ -257,10 +304,10 @@ namespace CarthaBotVPL.ViewModels
         private void ReaderLoop()
         {
             var buffer = new StringBuilder();
-            while (_reading && _port != null && _port.IsOpen)
+            while (_reading && _transport != null && _transport.IsConnected)
             {
                 string chunk = null;
-                try { chunk = _port.ReadExisting(); }
+                try { chunk = _transport.ReadExisting(); }
                 catch { break; }
 
                 if (string.IsNullOrEmpty(chunk)) { Thread.Sleep(15); continue; }
@@ -271,7 +318,7 @@ namespace CarthaBotVPL.ViewModels
                 {
                     string line = buffer.ToString(0, nl).Trim();
                     buffer.Remove(0, nl + 1);
-                    ParseTelemetry(line);
+                    try { ParseTelemetry(line); } catch { /* one bad packet must not kill the reader thread */ }
                 }
                 if (buffer.Length > 4096) buffer.Clear();   // guard against runaway noise
             }
@@ -288,8 +335,10 @@ namespace CarthaBotVPL.ViewModels
             if (string.IsNullOrEmpty(line) || line[0] != 'T') return;
             var parts = line.Split(',');
             if (parts.Length < 9) return;
-            var v = new int[8];
-            for (int i = 0; i < 8; i++)
+            // first 8 fields are the core state; any extra fields (e.g. raw sensor
+            // readings for diagnostics) are passed through too.
+            var v = new int[parts.Length - 1];
+            for (int i = 0; i < v.Length; i++)
                 if (!int.TryParse(parts[i + 1], out v[i])) return;
             TelemetryReceived?.Invoke(v);
         }
@@ -297,50 +346,106 @@ namespace CarthaBotVPL.ViewModels
         private void Stop()
         {
             StopReader();
-            try { _port?.Write("\x03"); } catch { }
+            try { if (_transport != null) _ = _transport.WriteAsync(new byte[] { 0x03 }); } catch { }
             Status = L("vplStStopped", "Stopped");
         }
 
-        #region serial
+        #region connection (USB / WiFi)
 
-        private void Connect()
+        /// <summary>Build a transport for the selected Mode and open it.</summary>
+        private async Task<bool> ConnectAsync()
         {
+            // FIRST time on Wi-Fi from this PC? Hand over to the shell's "Connect CarthaBot
+            // to your Wi-Fi" registration screen instead of trying (and failing) to connect.
+            if (Mode == ConnectionMode.Wifi && !CompanionApp.Wireless.WifiState.IsProvisioned)
+            {
+                ConnectPanelOpen = false;
+                RunOnUi(() =>
+                {
+                    Status = L("vplStWifiFirst", "First time on Wi-Fi — let's put CarthaBot on your network!");
+                    _eventAggregator.GetEvent<OpenWifiSetupEvent>().Publish();
+                });
+                return false;
+            }
+            if (Mode == ConnectionMode.Wifi && !string.IsNullOrWhiteSpace(CompanionApp.Wireless.WifiState.Endpoint))
+                WifiEndpoint = CompanionApp.Wireless.WifiState.Endpoint;
+
+            if (Busy) return IsConnected;
+            Busy = true;
             try
             {
-                var current = SerialPort.GetPortNames().ToList();
-                var candidate = current.Except(_oldComs).FirstOrDefault() ?? current.LastOrDefault();
-                if (candidate == null) { IsConnected = false; Status = L("vplStPlug", "Plug in CarthaBot and turn it on"); return; }
+                // Drop any previous link.
+                try { _transport?.Close(); } catch { }
+                _transport = null;
+                IsConnected = false;
 
-                _port = new SerialPort
+                ITransport t = Mode switch
                 {
-                    PortName = candidate,
-                    BaudRate = 115200,
-                    Encoding = Encoding.ASCII,
-                    NewLine = "\r\n",
-                    ReadTimeout = 600,
-                    WriteTimeout = 600
+                    ConnectionMode.Wifi => MakeWifi(WifiEndpoint),
+                    _ => new SerialTransport(_oldComs)
                 };
-                _port.Open();
-                _port.Write("\x03");
-                _port.WriteLine("");
-                IsConnected = _port.IsOpen;
-                if (IsConnected) Status = L("vplStReady", "CarthaBot is ready");
+                t.Status += s => RunOnUi(() => Status = s);
+
+                bool ok = await t.ConnectAsync();
+                _transport = ok ? t : null;
+                IsConnected = ok;
+                // A working Wi-Fi link means the robot IS on the network — remember it so no
+                // connection anywhere in the app is treated as "first time" again.
+                if (ok && Mode == ConnectionMode.Wifi)
+                    CompanionApp.Wireless.WifiState.MarkProvisioned(WifiEndpoint);
+                return ok;
             }
             catch (Exception ex)
             {
+                // A failed link (no WiFi joined, no COM port) must never
+                // crash the studio — just report it and stay open so the kid can retry.
+                _transport = null;
                 IsConnected = false;
-                Status = L("vplStPlug", "Plug in CarthaBot and turn it on");
-                System.Diagnostics.Debug.WriteLine("VPL connect: " + ex.Message);
+                RunOnUi(() => Status = L("vplStConnFail", "Couldn't connect to CarthaBot") + " — " + ex.Message);
+                return false;
             }
+            finally { Busy = false; }
+        }
+
+        /// <summary>Used by ▶ / live: connect with the current Mode if not already connected.</summary>
+        private Task<bool> EnsureConnectedAsync()
+        {
+            if (IsConnected) return Task.FromResult(true);
+            return ConnectAsync();
+        }
+
+        // Command handler (also auto-runs once on open to grab the freshly-flashed USB port).
+        private async void Connect()
+        {
+            bool ok = await ConnectAsync();
+            if (ok) ConnectPanelOpen = false;
+        }
+
+        private static ITransport MakeWifi(string endpoint)
+        {
+            string host = "carthabot.local";
+            int port = 3333;
+            if (!string.IsNullOrWhiteSpace(endpoint))
+            {
+                var parts = endpoint.Split(':');
+                host = parts[0].Trim();
+                if (parts.Length > 1) int.TryParse(parts[1].Trim(), out port);
+            }
+            return new WifiTransport(host, port);
         }
 
         private void CloseSerial()
         {
             StopReader();
-            try { _port?.Write("\x03"); } catch { }
-            try { if (_port != null && _port.IsOpen) _port.Close(); } catch { }
-            _port = null;
+            try { _transport?.Close(); } catch { }
+            _transport = null;
             IsConnected = false;
+        }
+
+        private static void RunOnUi(Action a)
+        {
+            var app = Application.Current;
+            if (app != null) app.Dispatcher.Invoke(a); else a();
         }
 
         #endregion

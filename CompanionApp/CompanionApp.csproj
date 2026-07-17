@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <!-- windows10.x TFM unlocks the WinRT Bluetooth LE APIs used by Vpl\Services\BleTransport -->
+    <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>FAB619.ico</ApplicationIcon>
   </PropertyGroup>
@@ -244,6 +246,12 @@
     <PackageReference Include="MahApps.Metro.IconPacks" Version="6.1.0" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- Webcam capture + computer vision for the Draw studio's "Air draw" (hand-movement) feature -->
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
+    <!-- ONNX Runtime runs the MediaPipe hand-landmark model (21 joints) for Air draw -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.2" />
     <PackageReference Include="Prism.Unity" Version="8.1.97" />
     <PackageReference Include="Syncfusion.SfProgressBar.WPF" Version="28.1.38" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
@@ -261,10 +269,14 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\Fonts\" />
+    <!-- Bundled kid fonts (OFL): Fredoka, the Ferid Around the World heading font.
+         Wildcard so a missing file never breaks the build (XAML falls back to Comic Sans). -->
+    <Resource Include="Resources\Fonts\*.ttf" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AdvancedProgramming\AdvancedProgramming.csproj" />
     <ProjectReference Include="..\BehaveProject\BehaveProject.csproj" />
+    <ProjectReference Include="..\CarthaBotTransport\CarthaBotTransport.csproj" />
     <ProjectReference Include="..\LearningProject\LearningProject.csproj" />
     <ProjectReference Include="..\MazeProject\MazeProject.csproj" />
   </ItemGroup>
@@ -325,6 +337,20 @@
     </Content>
     <Content Include="Vpl\Assets\carthabot_goalflag.mtl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <!-- Extra simulator maps for the under-6 module (Blender-authored; the Adventure
+         map's floor is the illustrated playmat texture map_adventure.png) -->
+    <Content Include="Vpl\Assets\carthabot_map_*.obj"><CopyToOutputDirectory>Always</CopyToOutputDirectory></Content>
+    <Content Include="Vpl\Assets\carthabot_map_*.mtl"><CopyToOutputDirectory>Always</CopyToOutputDirectory></Content>
+    <Content Include="Vpl\Assets\carthabot_map_*.json"><CopyToOutputDirectory>Always</CopyToOutputDirectory></Content>
+    <Content Include="Vpl\Assets\map_adventure.png"><CopyToOutputDirectory>Always</CopyToOutputDirectory></Content>
+    <!-- MediaPipe hand-landmark ONNX model (OpenCV Zoo) for Air draw; loaded from disk at runtime -->
+    <Content Include="Draw\Assets\handpose.onnx"><CopyToOutputDirectory>Always</CopyToOutputDirectory></Content>
+    <!-- CarthaSoft web app (the "Learn" / Scratch-like module) — WebView2 loads
+         CarthaSoft\CarthaSoft.html from next to the exe, so the whole bundle ships. -->
+    <Content Include="CarthaSoft\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>CarthaSoft\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Content>
   </ItemGroup>
   <ItemGroup>

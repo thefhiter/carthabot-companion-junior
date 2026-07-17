@@ -42,6 +42,12 @@ namespace CarthaBotVPL.Services
         private double _timerLeft = -1;              // <0 = not armed
         private bool _timerFired;
 
+        // clap (PC microphone or the on-screen 👏): pending until the rule loop
+        // actually runs, then true for exactly one pass — a clap during a Wait
+        // isn't lost, it fires right after (kind to small hands and long sounds)
+        private bool _clapPending;
+        private bool _clapFired;
+
         // rule-loop blocking (Wait / Sound)
         private double _blockedFor;
 
@@ -108,6 +114,9 @@ namespace CarthaBotVPL.Services
         public void ButtonDown(ButtonDir d) => _pressed.Add(d);
         public void ButtonUp(ButtonDir d) => _pressed.Remove(d);
 
+        /// <summary>Inject one clap (from the PC microphone or the on-screen 👏 button).</summary>
+        public void Clap() => _clapPending = true;
+
         // ------------------------------------------------------------------ tick
 
         public void Tick(double dt)
@@ -143,6 +152,10 @@ namespace CarthaBotVPL.Services
             {
                 if (_queue.Count == 0)
                 {
+                    // consume the pending clap: true for exactly this rule pass
+                    _clapFired = _clapPending;
+                    _clapPending = false;
+
                     bool btnDrive = false;
                     foreach (var r in _rules.Where(r => r.Event.Kind != EventKind.Start))
                         if (EventTrue(r.Event))
@@ -167,15 +180,17 @@ namespace CarthaBotVPL.Services
             }
 
             // follow-the-line mode: steer with the ground sensor every pass
+            // (off the line → physical left turn = (-f, f), a left-hand search)
             if (_followMode)
             {
-                _l = _followSpeed;
-                _r = OnLine ? _followSpeed : -_followSpeed;
+                _l = OnLine ? _followSpeed : -_followSpeed;
+                _r = _followSpeed;
             }
 
             // 4. physics: differential drive (always integrates — sleep doesn't stop motors)
             double v = (_l + _r) / 2.0 / 75.0;            // 150 avg → 2 units/s
-            double omega = (_l - _r) / 3.0;               // motors(s,-s) → CCW (left) turn
+            // standard diff-drive: +omega = CCW = left; matches the firmware (left = motors(-s, s))
+            double omega = (_r - _l) / 3.0;
             YawDeg += omega * dt;
             double nx = X + fwd.X * v * dt;
             double ny = Y + fwd.Y * v * dt;
@@ -218,6 +233,7 @@ namespace CarthaBotVPL.Services
                 EventKind.Obstacle => e.Detected ? FrontDetected : !FrontDetected,
                 EventKind.Line => e.Detected ? OnLine : !OnLine,
                 EventKind.Timer => _timerFired,
+                EventKind.Clap => _clapFired,
                 _ => false
             };
         }
@@ -239,8 +255,9 @@ namespace CarthaBotVPL.Services
                     {
                         MoveDir.Forward => ((double)s, (double)s),
                         MoveDir.Backward => ((double)-s, (double)-s),
-                        MoveDir.Left => ((double)s, (double)-s),
-                        MoveDir.Right => ((double)-s, (double)s),
+                        // same wheel signs as the firmware: left turn = left wheel back, right fwd
+                        MoveDir.Left => ((double)-s, (double)s),
+                        MoveDir.Right => ((double)s, (double)-s),
                         _ => (0.0, 0.0)
                     };
                     break;

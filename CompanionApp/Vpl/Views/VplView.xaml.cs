@@ -22,12 +22,13 @@ namespace CarthaBotVPL.Views
     /// </summary>
     public partial class VplView : UserControl
     {
-        private bool _dark = true;   // matches the dark defaults declared in XAML
-
         public VplView(IEventAggregator eventAggregator, List<string> oldComs)
+            : this(eventAggregator, oldComs, ConnectionMode.Usb, null) { }
+
+        public VplView(IEventAggregator eventAggregator, List<string> oldComs, ConnectionMode mode, string param)
         {
             InitializeComponent();
-            var vm = new VplViewModel(eventAggregator, oldComs);
+            var vm = new VplViewModel(eventAggregator, oldComs, mode, param);
             DataContext = vm;
             Loaded += (_, __) => { LoadEmptyStateRobot(); UpdateStarBadge(); };
             Sim.MissionCompleted += _ => UpdateStarBadge();
@@ -105,6 +106,9 @@ namespace CarthaBotVPL.Views
             if (!(sender is FrameworkElement fe && fe.Tag is MissionCard card)) return;
             if (!(DataContext is VplViewModel vm)) return;
             MissionsOverlay.Visibility = Visibility.Collapsed;
+            // missions are tuned for the Classic playground — pin it
+            if (Sim.CurrentMap.Id != "classic")
+                Sim.SetMap(SimMap.All[0]);
             Sim.Run(vm.Rules, card.Mission);
             SimOverlay.Visibility = Visibility.Visible;
         }
@@ -164,53 +168,6 @@ namespace CarthaBotVPL.Views
         {
             UiSounds.Enabled = !UiSounds.Enabled;
             if (MuteGlyph != null) MuteGlyph.Text = UiSounds.Enabled ? "🔊" : "🔇";
-        }
-
-        // ===== Light / dark theme toggle (swaps the DynamicResource brushes) =====
-        private void OnToggleTheme(object sender, RoutedEventArgs e)
-        {
-            _dark = !_dark;
-            ApplyTheme(_dark);
-            if (ThemeGlyph != null) ThemeGlyph.Text = _dark ? "☀" : "🌙";
-        }
-
-        private void ApplyTheme(bool dark)
-        {
-            void Set(string key, string hex) => Resources[key] = new SolidColorBrush(
-                (Color)ColorConverter.ConvertFromString(hex));
-
-            if (dark)
-            {
-                Set("VplBg", "#192428");
-                Set("VplToolbar", "#2D383C");
-                Set("VplPanel", "#22313A");
-                Set("VplCard", "#22313A");
-                Set("VplLine", "#33454F");
-                Set("VplText", "#FFFFFF");
-                Set("VplTextDim", "#9FB0B7");
-                Set("VplChip", "#3A4A52");
-                Set("VplDashed", "#51636C");
-                Set("VplConnector", "#6B7980");
-                Set("VplHover", "#22FFFFFF");
-                Set("VplEventCardBg", "#2A2018");
-                Set("VplActionCardBg", "#1C2A30");
-            }
-            else
-            {
-                Set("VplBg", "#FFFFFF");
-                Set("VplToolbar", "#EEF1F3");
-                Set("VplPanel", "#F3F5F7");
-                Set("VplCard", "#FFFFFF");
-                Set("VplLine", "#D7DEE2");
-                Set("VplText", "#1C2B31");
-                Set("VplTextDim", "#66767D");
-                Set("VplChip", "#E5EBEE");
-                Set("VplDashed", "#B9C4CA");
-                Set("VplConnector", "#9DAAB0");
-                Set("VplHover", "#14000000");
-                Set("VplEventCardBg", "#FFF1E6");
-                Set("VplActionCardBg", "#EAF5FC");
-            }
         }
 
         // ===== Save a PNG snapshot of the program =====

@@ -64,11 +64,18 @@ namespace CarthaBotVPL.Services
             sb.AppendLine("import machine, neopixel, time");
             sb.AppendLine();
             sb.AppendLine("SPEED_FREQ = 1000");
-            sb.AppendLine("# Motors (from CarthaBot firmware: M1=left dir23/pwm29, M2=right dir24/pwm28)");
-            sb.AppendLine("m1_dir = machine.Pin(23, machine.Pin.OUT)");
-            sb.AppendLine("m2_dir = machine.Pin(24, machine.Pin.OUT)");
-            sb.AppendLine("m1_pwm = machine.PWM(machine.Pin(29)); m1_pwm.freq(SPEED_FREQ)");
-            sb.AppendLine("m2_pwm = machine.PWM(machine.Pin(28)); m2_pwm.freq(SPEED_FREQ)");
+            sb.AppendLine("# Motors — 2-input (L9110-style) H-bridge per wheel: drive the active");
+            sb.AppendLine("# coil with PWM and hold the other at 0, so a wheel runs at the SAME");
+            sb.AppendLine("# speed forward and back. (The firmware's 'steady dir pin + PWM' trick");
+            sb.AppendLine("# brakes one phase, which made the right wheel crawl on a Forward.)");
+            sb.AppendLine("# Pins from the firmware: M1=left 23/29, M2=right 24/28.");
+            sb.AppendLine("# Forward coils matched to THIS robot's wiring (verified on hardware):");
+            sb.AppendLine("# both wheels roll forward together and turns match the arrows.");
+            sb.AppendLine("# left fwd=GP23 / rev=GP29 ; right fwd=GP24 / rev=GP28.");
+            sb.AppendLine("m1_fwd = machine.PWM(machine.Pin(23)); m1_fwd.freq(SPEED_FREQ)");
+            sb.AppendLine("m1_rev = machine.PWM(machine.Pin(29)); m1_rev.freq(SPEED_FREQ)");
+            sb.AppendLine("m2_fwd = machine.PWM(machine.Pin(24)); m2_fwd.freq(SPEED_FREQ)");
+            sb.AppendLine("m2_rev = machine.PWM(machine.Pin(28)); m2_rev.freq(SPEED_FREQ)");
             sb.AppendLine("np = neopixel.NeoPixel(machine.Pin(21), 11)");
             sb.AppendLine("spk = machine.PWM(machine.Pin(20)); spk.duty_u16(0)");
             sb.AppendLine();
@@ -79,11 +86,17 @@ namespace CarthaBotVPL.Services
             sb.AppendLine("btn_right = machine.Pin(19, machine.Pin.IN, machine.Pin.PULL_DOWN)");
             sb.AppendLine("btn_center = machine.Pin(22, machine.Pin.IN, machine.Pin.PULL_DOWN)");
             sb.AppendLine();
-            sb.AppendLine("# IR sensors — set these to match your CarthaBot wiring");
-            sb.AppendLine("IR_FRONT_PIN = 26");
-            sb.AppendLine("IR_GROUND_PIN = 27");
-            sb.AppendLine("ir_front = machine.Pin(IR_FRONT_PIN, machine.Pin.IN)");
-            sb.AppendLine("ir_ground = machine.Pin(IR_GROUND_PIN, machine.Pin.IN)");
+            sb.AppendLine("# IR sensors — official CarthaBot pin map (firmware IRSensors + examples).");
+            sb.AppendLine("# Each reads 1 = detected: an obstacle ahead, or being over the black line.");
+            sb.AppendLine("ir_fl = machine.Pin(9, machine.Pin.IN)    # front-left");
+            sb.AppendLine("ir_fc = machine.Pin(10, machine.Pin.IN)   # front-centre");
+            sb.AppendLine("ir_fr = machine.Pin(11, machine.Pin.IN)   # front-right");
+            sb.AppendLine("ir_gl = machine.Pin(15, machine.Pin.IN)   # ground/line left");
+            sb.AppendLine("ir_gr = machine.Pin(16, machine.Pin.IN)   # ground/line right");
+            sb.AppendLine("def front_obstacle():");
+            sb.AppendLine("    return ir_fl.value() or ir_fc.value() or ir_fr.value()");
+            sb.AppendLine("def on_line():");
+            sb.AppendLine("    return ir_gl.value() or ir_gr.value()");
             sb.AppendLine();
             sb.AppendLine("def _duty(v):");
             sb.AppendLine("    if v < 0: v = 0");
@@ -91,14 +104,20 @@ namespace CarthaBotVPL.Services
             sb.AppendLine("    return int(v * 65535 // 255)");
             sb.AppendLine();
             sb.AppendLine("def motors(left, right):");
-            sb.AppendLine("    # +ve = forward; firmware uses opposite direction polarity per motor");
+            sb.AppendLine("    # +ve = forward. Drive one coil with PWM, hold the other at 0.");
             if (telemetry)
             {
                 sb.AppendLine("    global _ml, _mr");
                 sb.AppendLine("    _ml = left; _mr = right");
             }
-            sb.AppendLine("    m1_dir.value(0 if left >= 0 else 1); m1_pwm.duty_u16(_duty(abs(left)))");
-            sb.AppendLine("    m2_dir.value(1 if right >= 0 else 0); m2_pwm.duty_u16(_duty(abs(right)))");
+            sb.AppendLine("    if left >= 0:");
+            sb.AppendLine("        m1_fwd.duty_u16(_duty(left)); m1_rev.duty_u16(0)");
+            sb.AppendLine("    else:");
+            sb.AppendLine("        m1_fwd.duty_u16(0); m1_rev.duty_u16(_duty(-left))");
+            sb.AppendLine("    if right >= 0:");
+            sb.AppendLine("        m2_fwd.duty_u16(_duty(right)); m2_rev.duty_u16(0)");
+            sb.AppendLine("    else:");
+            sb.AppendLine("        m2_fwd.duty_u16(0); m2_rev.duty_u16(_duty(-right))");
             sb.AppendLine();
 
             if (usesAnim)
@@ -263,6 +282,10 @@ namespace CarthaBotVPL.Services
                     sb.AppendLine("    btn_drive = False");
                 foreach (var r in loopRules)
                 {
+                    // the robot has no microphone: 👏 rules run in the 3D playground only,
+                    // so they compile to a rule that never fires (kept visible for the kids)
+                    if (r.Event.Kind == EventKind.Clap)
+                        sb.AppendLine("    # clap rule — works in the 3D playground (the robot has no microphone)");
                     sb.AppendLine($"    if {Condition(r.Event, usesState)}:");
                     if (r.Actions.Count == 0)
                     {
@@ -286,12 +309,18 @@ namespace CarthaBotVPL.Services
                 }
                 if (usesFollow)
                 {
-                    sb.AppendLine("    # follow-the-line mode: steer with the ground sensor every pass");
+                    sb.AppendLine("    # follow-the-line mode: two ground sensors steer every pass");
+                    sb.AppendLine("    # (1 = that side is over the line), like the CarthaBot Suiveur firmware");
                     sb.AppendLine("    if follow:");
-                    sb.AppendLine("        if ir_ground.value():");
-                    sb.AppendLine("            motors(follow_speed, follow_speed)");
+                    sb.AppendLine("        _sl = ir_gl.value(); _sr = ir_gr.value()");
+                    sb.AppendLine("        if _sl and _sr:");
+                    sb.AppendLine("            motors(follow_speed, follow_speed)      # both on line → straight");
+                    sb.AppendLine("        elif _sl and not _sr:");
+                    sb.AppendLine("            motors(follow_speed, -follow_speed)     # line on the left → steer right");
+                    sb.AppendLine("        elif _sr and not _sl:");
+                    sb.AppendLine("            motors(-follow_speed, follow_speed)     # line on the right → steer left");
                     sb.AppendLine("        else:");
-                    sb.AppendLine("            motors(follow_speed, -follow_speed)");
+                    sb.AppendLine("            motors(follow_speed, follow_speed)      # lost it → creep forward");
                 }
                 if (usesAnim) sb.AppendLine("    anim_tick()");
                 if (telemetry)
@@ -299,8 +328,10 @@ namespace CarthaBotVPL.Services
                     sb.AppendLine("    # stream live state to the app's digital twin (~10 Hz)");
                     sb.AppendLine("    if time.ticks_diff(time.ticks_ms(), _tlast) >= 100:");
                     sb.AppendLine("        _tlast = time.ticks_ms()");
-                    sb.AppendLine("        print('T,%d,%d,%d,%d,%d,%d,%d,%d' % (_ml, _mr, " +
-                                  "1 if ir_front.value() else 0, 1 if ir_ground.value() else 0, _cr, _cg, _cb, _aid))");
+                    sb.AppendLine("        # last two fields are the raw left/right line sensors (diagnostics)");
+                    sb.AppendLine("        print('T,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d' % (_ml, _mr, " +
+                                  "1 if front_obstacle() else 0, 1 if on_line() else 0, _cr, _cg, _cb, _aid, " +
+                                  "ir_gl.value(), ir_gr.value()))");
                 }
                 sb.AppendLine("    time.sleep_ms(20)");
             }
@@ -325,13 +356,19 @@ namespace CarthaBotVPL.Services
                     cond = $"{pin}.value()";
                     break;
                 case EventKind.Obstacle:
-                    cond = e.Detected ? "ir_front.value()" : "not ir_front.value()";
+                    // active-high front IR row (GP9/10/11): 1 = obstacle ahead
+                    cond = e.Detected ? "front_obstacle()" : "not front_obstacle()";
                     break;
                 case EventKind.Line:
-                    cond = e.Detected ? "ir_ground.value()" : "not ir_ground.value()";
+                    // active-high ground sensors (GP15/16): 1 = over the black line
+                    cond = e.Detected ? "on_line()" : "not on_line()";
                     break;
                 case EventKind.Timer:
                     cond = "timer_fired";
+                    break;
+                case EventKind.Clap:
+                    // no microphone on the hardware — never true on the real robot
+                    cond = "False";
                     break;
                 default:
                     cond = "True";
