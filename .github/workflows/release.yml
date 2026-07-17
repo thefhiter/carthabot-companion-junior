@@ -1,0 +1,50 @@
+name: Build and attach release asset
+
+# Builds the self-contained win-x64 app on GitHub's runners and attaches the
+# zip to a release. Run it from the Actions tab (workflow_dispatch) whenever a
+# release tag exists, or push a v* tag to do everything automatically.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to attach the zip to (e.g. v3.6)"
+        required: true
+        default: "v3.6"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+
+      - name: Run Draw path-compiler tests
+        run: dotnet test CompanionApp.DrawTests/CompanionApp.DrawTests.csproj -c Release
+
+      - name: Publish self-contained win-x64
+        run: dotnet publish CompanionApp/CompanionApp.csproj -c Release -r win-x64 --self-contained true
+
+      - name: Zip the app
+        shell: pwsh
+        run: Compress-Archive -Path "CompanionApp/bin/Release/net6.0-windows10.0.19041.0/win-x64/publish/*" -DestinationPath CarthaBot-Companion-Junior.zip
+
+      - name: Attach zip to the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.event.inputs.tag }}"
+          if (-not $tag) { $tag = "${{ github.ref_name }}" }
+          gh release upload $tag CarthaBot-Companion-Junior.zip --clobber --repo ${{ github.repository }}
