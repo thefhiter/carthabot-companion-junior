@@ -1,0 +1,39 @@
+{
+	"devices": {
+		"RPI_Pico": {
+			"title":"<b></b><br>",
+			"speed":"115200",
+			"boardID":"CarthaBot with RP2040", 
+			"img":"devinfo/media/CathaBot.jpg",
+			"description":"",
+			"toolbox":"rpi_pico.xml",
+			"pinout": [
+				
+			["IRSensor Front1", "8"],
+			["IRSensor Front2", "9"],
+			["IRSensor Front3", "10"],
+			["IRSensor Front4", "11"],
+			["IRSensor Front5", "12"],
+			["IRSensor Back1", "13"],
+			["IRSensor Back2", "14"],
+			["IRSensor Ground1", "15"],
+			["IRSensor Ground2", "16"],
+		    ["RGB pin", "21"],
+		    ["Temperature", "26"],
+		    ["Microphone", "27"],		    
+			["Speaker", "20"],
+		    ["IR Receiver", "6"],
+			["I2C SDA", "0"],
+			["I2C SCL", "1"],
+
+
+		    ["Right Motor #A", "23"],
+		    ["Right Motor #B", "29"],
+			["Left Motor #A", "24"],
+		    ["Left Motor #B", "28"]
+			],
+			"serial_packet_size":"500"
+		}
+	}
+}
+

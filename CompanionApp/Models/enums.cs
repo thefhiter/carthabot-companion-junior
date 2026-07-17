@@ -24,6 +24,7 @@ namespace CompanionApp.Models
         Tracer,
         Python,
         KidsCoding,
-        VplJunior
+        VplJunior,
+        Draw
     }
 }

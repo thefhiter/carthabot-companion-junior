@@ -1,6 +1,7 @@
 ﻿using AdvancedProgramming.Communs;
 using AdvancedProgramming.Events;
 using AdvancedProgramming.ViewModels;
+using CarthaBotVPL.Services;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
@@ -41,6 +42,27 @@ namespace AdvancedProgramming.Views
             }
 
 
+        }
+
+        /// <summary>
+        /// Wireless overload: identical to the USB ctor, but the connection carrier (WiFi / BLE)
+        /// is selected via Configure(...) BEFORE the link is opened. <paramref name="param"/> is the
+        /// WiFi endpoint ("host:port") or the BLE device name.
+        /// </summary>
+        public AdvancedProgrammingView(IEventAggregator eventAggregator, List<string> oldComs,
+                                       ConnectionMode mode, string param)
+        {
+            InitializeComponent();
+
+            _eventAggregator = eventAggregator;
+
+            if (DataContext is AdvancedProgrammingViewModel vm)
+            {
+                vm.Subscribe(_eventAggregator);
+                vm.OldCom = oldComs;
+                vm.Configure(mode, param);
+                vm.ConnectMethod();
+            }
         }
 
         private void CliOutputBox_TextChanged(object sender, TextChangedEventArgs e)

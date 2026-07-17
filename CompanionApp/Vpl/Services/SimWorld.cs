@@ -39,12 +39,15 @@ namespace CarthaBotVPL.Services
         public double IrRange { get; private set; } = 2.6;
         public double GroundSensorY { get; private set; } = 1.2;
 
-        public static SimWorld Load()
+        public static SimWorld Load() => Load("carthabot_simworld.json");
+
+        /// <summary>Load a map manifest by file name (in Vpl\Assets).</summary>
+        public static SimWorld Load(string jsonFile)
         {
             var w = new SimWorld();
             try
             {
-                string path = Path.Combine(AppContext.BaseDirectory, "Vpl", "Assets", "carthabot_simworld.json");
+                string path = Path.Combine(AppContext.BaseDirectory, "Vpl", "Assets", jsonFile);
                 if (!File.Exists(path)) return w;
                 using var doc = JsonDocument.Parse(File.ReadAllText(path));
                 var r = doc.RootElement;

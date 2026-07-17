@@ -58,12 +58,12 @@ namespace BehaveProject.ViewModels
                 "In this mode, the robot follows a predefined path marked by a line (black line on a white surface) using infrared line sensors. It continuously reads the line position and adjusts its steering to stay on track.")); // #00FF00
 
             Modes.Add(new Mode(_eventAggregator, $"{folderPath}/Friendly.jpg", "Friendly",
-                new SolidColorBrush(Color.FromRgb(88, 127, 237)),
-                "In this mode, the robot’s movement is manually controlled using physical buttons located on the robot itself. Each button corresponds to a specific action, such as moving forward, backward, turning left, or turning right.")); // #587fed
+                new SolidColorBrush(Color.FromRgb(241, 100, 162)),
+                "In this mode, the robot’s movement is manually controlled using physical buttons located on the robot itself. Each button corresponds to a specific action, such as moving forward, backward, turning left, or turning right.")); // #F164A2 (purple) – friendly = buttons
 
             Modes.Add(new Mode(_eventAggregator, $"{folderPath}/Obdidient.jpg", "Obedient",
-                new SolidColorBrush(Color.FromRgb(241, 100, 162)),
-                "In this mode, the robot uses infrared (IR) sensors to detect and follow a specific object, such as a hand. The robot continuously monitors the target’s position and adjusts its movement to minimize the gap and stay close to the object.")); // #F164A2
+                new SolidColorBrush(Color.FromRgb(88, 127, 237)),
+                "In this mode, the robot uses infrared (IR) sensors to detect and follow a specific object, such as a hand. The robot continuously monitors the target’s position and adjusts its movement to minimize the gap and stay close to the object.")); // #587fed (blue) – obedient = follower
             _eventAggregator.GetEvent<SelectedModeEvent>().Subscribe(SelectedModeMethod);
             SelecetdMode = Modes[0];
             GoLeftCommand = new DelegateCommand(GoLeftMethod);

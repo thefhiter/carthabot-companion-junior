@@ -37,8 +37,42 @@ Grab the ready‑to‑run build from the **[Releases](https://github.com/thefhit
     robot's telemetry while your program runs on the hardware.
   - **"My tune"** pentatonic music editor, **follow‑the‑line** drive mode, light/dark theme,
     and full **English / French** localisation.
+- **Draw with a pen** *(turtle plotter)* — drop a pen into CarthaBot's hole, then **draw a
+  picture, stamp a shape (square · triangle · circle · star · heart · zig-zag · spiral · house ·
+  arrow), or type a word**, and the robot traces it on paper. Live path **preview**, a generated-code
+  viewer, save/open drawings, multi-pass "trace over" for darker lines, and one-tap **calibration**
+  tests (100 mm line / 90° turn) that persist between sessions. Works over USB or WiFi.
 - **3D CarthaBot model** used throughout — in the action cards, the simulator, and the
   Assembly Manual's interactive exploded view.
+
+## 🆕 What's new in v3.6
+
+- **Update checker fixed** — the in‑app update button now checks *this* repository
+  (derived from `Resources\Settings.ini` → `GithubUrl`, one source of truth) and only
+  offers a release that is **strictly newer** than the installed version, so it can
+  never propose a downgrade again.
+- **UI text fixes** — "Rabot" → "CarthaBot" in the Behaviours card (English and French).
+- First public source release: includes the **Draw with a pen** module (+ unit tests in
+  `CompanionApp.DrawTests`), the **Wireless (WiFi) transport**, the **CarthaSoft** Blockly
+  assets, the six VPL simulator **maps** (city, garden, ocean, snow, space, adventure),
+  the **Clap detector** for the 👏 event, the **Fredoka** embedded font, and the RP2040
+  **Firmware** sources.
+
+## 🛠️ Building from source
+
+Requirements: **.NET SDK 8.x** (the app targets `net6.0-windows10.0.19041.0`; the 8.x SDK
+builds it fine — the EOL warnings are expected) on Windows 10/11 x64.
+
+```powershell
+dotnet publish CompanionApp\CompanionApp.csproj -c Release -r win-x64 --self-contained true
+```
+
+The ready‑to‑run output lands in
+`CompanionApp\bin\Release\net6.0-windows10.0.19041.0\win-x64\publish\`.
+Launch `CompanionApp.exe` from inside that folder (it reads `Resources\Settings.ini` by a
+relative path). The solution also contains the module projects (`AdvancedProgramming`,
+`BehaveProject`, `LearningProject`, `MazeProject`), the `CarthaBotTransport` USB/WiFi
+transport library, and `CompanionApp.DrawTests` (xUnit tests for the Draw path planner).
 
 ## 🧠 Requirements
 

@@ -17,6 +17,7 @@ Vpl/
     VplRuntime.cs    the same semantics interpreted in C# for the simulator
     SimWorld.cs      playground geometry loaded from carthabot_simworld.json
     UiSounds.cs      in-memory WAV synth (preset sounds, tune preview, UI feedback)
+    ClapDetector.cs  PC-microphone clap detection (winmm waveIn) for the 👏 event
   ViewModels/
     VplViewModel.cs  rules list, compile/run/stop, save/open (.cbvpl), undo stack,
                      advanced-mode toggle (Timer + Memory blocks)
@@ -33,8 +34,23 @@ Controls/ (shared)
 ## Block set
 
 Events: **Buttons** (5), **Obstacle** (front IR, detected/clear), **Line**
-(ground IR, detected/clear), **Start**, **Timer rings** (advanced).
+(ground IR, detected/clear), **Clap** 👏 (the PC microphone hears a hand clap —
+see below), **Start**, **Timer rings** (advanced).
 Every event can carry a **state filter** in advanced mode (★ ♥ ● ■ or "always").
+
+### The clap event 👏
+
+The robot has **no microphone**, so the PC's mic stands in for it
+(`ClapDetector.cs`, raw winmm waveIn — no NuGet dependency): while the 3D
+simulator runs a program with a clap rule, a bottom-centre tip appears
+("🎤 Clap your hands — CarthaBot is listening!") with an on-screen 👏 button as
+the no-mic fallback. Detection is a sharp-transient test (absolute gate +
+5× the ambient floor + 2.5× the recent average, 350 ms refractory), and the
+detector is suppressed while the app plays its own sounds so open speakers
+can't clap back at the robot. In the runtime a clap is a **one-shot** like the
+timer: it stays pending through a blocking Wait and fires for exactly one rule
+pass. The compiler keeps clap rules visible in the generated MicroPython but
+emits them under `if False:` with a comment — honest about the missing sensor.
 
 Actions: **Move** (5 directions + speed), **LED Colour**, **Sound** (4 presets
 + "My tune": 6 pentatonic slots C5 D5 E5 G5 A5), **Wait**, **Light show**
@@ -89,6 +105,15 @@ off the line → turn*.
 All UI strings live in `Resources/StringResources.xaml` (+ `-FR.xaml`) under
 `vpl*` keys, referenced via `DynamicResource`; view-model strings go through
 `L(key, fallback)` so the studio follows the app's language toggle live.
+
+## Theme
+
+One **sunny kid theme** only (warm cream canvas, milky panels, white cards,
+Comic Sans labels) — the light/dark toggle was retired in v3.5 to keep the
+studio bright and friendly, in the spirit of kids' apps like *Ferid Around the
+World*. The brushes are the `Vpl*` DynamicResources declared at the top of
+`VplView.xaml`; the code overlay keeps its dark Consolas console look on
+purpose, and the simulator's 🌙 disco mode is gameplay, not a theme.
 
 ## 3D asset pipeline
 

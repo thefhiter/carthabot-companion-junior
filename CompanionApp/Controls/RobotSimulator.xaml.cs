@@ -24,11 +24,16 @@ namespace CompanionApp.Controls
     /// </summary>
     public partial class RobotSimulator : UserControl
     {
-        private static readonly SimWorld World = SimWorld.Load();
+        private SimWorld World;                 // the active map's geometry
+        private SimMap _map = SimMap.All[0];     // current map (default: classic)
+        private static readonly Dictionary<string, Model3D> _worldModels = new Dictionary<string, Model3D>();
         private static readonly SolidColorBrush DimDot = new SolidColorBrush(Color.FromRgb(0x44, 0x44, 0x44));
 
+        /// <summary>The map currently shown (so callers can re-run on the same map).</summary>
+        public SimMap CurrentMap => _map;
+
         // shared, frozen models (loaded once per process)
-        private static Model3D _robotModel, _worldModel, _obstacleModel, _coinModel, _goalModel;
+        private static Model3D _robotModel, _obstacleModel, _coinModel, _goalModel;
 
         private AxisAngleRotation3D _yawRot;
         private TranslateTransform3D _trans;
@@ -80,6 +85,10 @@ namespace CompanionApp.Controls
         private readonly Stopwatch _clock = new Stopwatch();
         private TimeSpan _lastTick;
 
+        // 👏 clap event: the PC microphone stands in for the robot's missing one
+        private ClapDetector _clapDetector;
+        private bool _hasClapRule;
+
         /// <summary>Raised once when the active mission's goal is reached.</summary>
         public event Action<Mission> MissionCompleted;
 
@@ -90,7 +99,67 @@ namespace CompanionApp.Controls
         {
             InitializeComponent();
             LoadModels();
-            BuildScene();
+            World = SimWorld.Load(_map.Manifest);
+            BuildRobotAndDecor();    // robot, halo, clouds, sensors (map-independent)
+            ApplyMap();              // floor + obstacle/goal/coins for the current map
+            PopulateMapPicker();
+            // if the studio is torn down with the sim running, release the microphone
+            Unloaded += (_, __) => StopClapListening();
+        }
+
+        private IEnumerable<VplRule> _lastRules;
+
+        /// <summary>Row model for one map-picker chip.</summary>
+        private class MapChip
+        {
+            public SimMap Map { get; init; }
+            public string Glyph => Map.Glyph;
+            public string Name { get; init; }
+            public bool Selected { get; init; }
+        }
+
+        private void PopulateMapPicker()
+        {
+            MapPicker.ItemsSource = SimMap.All.Select(m => new MapChip
+            {
+                Map = m,
+                Name = L(m.NameKey, m.Id),
+                Selected = m.Id == _map.Id
+            }).ToList();
+        }
+
+        private void OnPickMap(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is FrameworkElement fe && fe.Tag is SimMap map) || map.Id == _map.Id) return;
+            bool wasLive = _liveMode;
+            var rules = _lastRules;
+            SetMap(map);
+            PopulateMapPicker();
+            UiSounds.Blip();
+            // resume the current activity on the new map (free play; missions are map-specific)
+            if (wasLive) RunLive();
+            else if (rules != null) Run(rules);
+        }
+
+        /// <summary>Switch the playground to another map (rebuilds the floor and props).</summary>
+        public void SetMap(SimMap map)
+        {
+            StopSim();
+            _map = map;
+            World = SimWorld.Load(map.Manifest);
+            ApplyMap();
+            ResetRobotToStart();
+        }
+
+        private void ResetRobotToStart()
+        {
+            if (_trans == null) return;
+            _trans.OffsetX = World.StartPos.X;
+            _trans.OffsetY = World.StartPos.Y;
+            _yawRot.Angle = World.StartDeg - 90;
+            _prevX = World.StartPos.X; _prevY = World.StartPos.Y;
+            ClearTrail();
+            SetHalo(Colors.Black);
         }
 
         // ------------------------------------------------------------------ scene
@@ -109,7 +178,6 @@ namespace CompanionApp.Controls
             try
             {
                 _robotModel ??= Import("carthabot_robot.obj");
-                _worldModel ??= Import("carthabot_simworld.obj");
                 _obstacleModel ??= Import("carthabot_obstacle.obj");
                 _coinModel ??= Import("carthabot_coin.obj");
                 _goalModel ??= Import("carthabot_goalflag.obj");
@@ -125,11 +193,23 @@ namespace CompanionApp.Controls
         private static RotateTransform3D ExportFix() =>
             new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(0, 0, 1), 180));
 
-        private void BuildScene()
+        private static Model3D WorldModel(string objFile)
         {
-            if (_worldModel != null)
+            if (!_worldModels.TryGetValue(objFile, out var m))
             {
-                WorldHost.Content = _worldModel;
+                m = Import(objFile);
+                _worldModels[objFile] = m;
+            }
+            return m;
+        }
+
+        /// <summary>The map floor + its obstacle / goal / coins (rebuilt on every map switch).</summary>
+        private void ApplyMap()
+        {
+            var wm = WorldModel(_map.WorldObj);
+            if (wm != null)
+            {
+                WorldHost.Content = wm;
                 WorldHost.Transform = ExportFix();
             }
 
@@ -153,7 +233,9 @@ namespace CompanionApp.Controls
                 GoalHost.Transform = g;
             }
 
-            // three spinning coins at the manifest positions
+            // spinning coins at this map's manifest positions
+            CoinsHost.Children.Clear();
+            _coinVisuals.Clear();
             if (_coinModel != null)
             {
                 foreach (var c in World.Coins)
@@ -170,8 +252,11 @@ namespace CompanionApp.Controls
                     CoinsHost.Children.Add(vis);
                 }
             }
+        }
 
-            // the robot + its LED halo (export fix first, so "front" is +Y at yaw 0)
+        /// <summary>Robot, LED halo, sensor beam and clouds — identical across all maps.</summary>
+        private void BuildRobotAndDecor()
+        {
             if (_robotModel != null)
             {
                 _yawRot = new AxisAngleRotation3D(new Vector3D(0, 0, 1), 0);
@@ -180,8 +265,7 @@ namespace CompanionApp.Controls
                 grp.Children.Add(ExportFix());
                 grp.Children.Add(new RotateTransform3D(_yawRot));
                 grp.Children.Add(_trans);
-                // this instance gets its own copy so the wheels can roll
-                var robot = (Model3D)_robotModel.Clone();
+                var robot = (Model3D)_robotModel.Clone();   // own copy so the wheels can roll
                 RigWheels(robot);
                 RobotHost.Content = robot;
                 RobotHost.Transform = grp;
@@ -328,6 +412,7 @@ namespace CompanionApp.Controls
             _mission = mission;
             _missionDone = false;
             _stillTime = 0;
+            _lastRules = rules;
 
             _rt = new VplRuntime(World, rules ?? Enumerable.Empty<VplRule>());
 
@@ -354,6 +439,7 @@ namespace CompanionApp.Controls
             CoinChip.Visibility = _rt.CoinsActive ? Visibility.Visible : Visibility.Collapsed;
             CoinText.Text = $"💰 0/{World.Coins.Count}";
             StateChip.Visibility = Visibility.Collapsed;
+            LiveDetailsPanel.Visibility = Visibility.Collapsed;
             PadHint.Text = L("vplSimPad", "CarthaBot's buttons");
             if (mission != null)
             {
@@ -377,6 +463,10 @@ namespace CompanionApp.Controls
             {
                 MissionBanner.Visibility = Visibility.Collapsed;
             }
+
+            // 👏 rules: listen on the PC microphone (and show the clap tip) while running
+            _hasClapRule = rules != null && rules.Any(r => r.Event.Kind == EventKind.Clap);
+            StartClapListening();
 
             // reset mission progress, pen trail and pose
             for (int i = 0; i < _lineVisited.Length; i++) _lineVisited[i] = false;
@@ -409,11 +499,14 @@ namespace CompanionApp.Controls
             _obstacleTrans?.SetValue(TranslateTransform3D.OffsetXProperty, World.ObstaclePos.X);
             _obstacleTrans?.SetValue(TranslateTransform3D.OffsetYProperty, World.ObstaclePos.Y);
             GoalHost.Content = _goalModel;
-            for (int i = 0; i < _coinVisuals.Count; i++) _coinVisuals[i].Content = _coinModel;
+            // no coins in live mode — it mirrors the real robot, not the coin game
+            for (int i = 0; i < _coinVisuals.Count; i++) _coinVisuals[i].Content = null;
 
             // HUD + a "LIVE" banner
             CoinChip.Visibility = Visibility.Collapsed;
             StateChip.Visibility = Visibility.Collapsed;
+            LiveDetailsPanel.Visibility = Visibility.Visible;
+            UpdateLiveDetails();
             PadHint.Text = L("vplSimRealBtns", "Press the buttons on the real CarthaBot");
             MissionBanner.Visibility = Visibility.Visible;
             MissionBanner.Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x8A, 0x12, 0x12));
@@ -421,6 +514,10 @@ namespace CompanionApp.Controls
             MissionTitle.Text = L("vplSimLiveTitle", "LIVE — mirroring the real CarthaBot");
             MissionHint.Text = L("vplSimLiveHint", "The 3D robot moves with your real robot in real time");
             MissionStar.Visibility = Visibility.Collapsed;
+
+            // live mode mirrors the real robot, which has no microphone — no clap tip
+            _hasClapRule = false;
+            StopClapListening();
 
             ClearTrail();
             ConfettiLayer.Children.Clear();
@@ -451,7 +548,67 @@ namespace CompanionApp.Controls
             }
             _twin = null;
             _liveMode = false;
+            LiveDetailsPanel.Visibility = Visibility.Collapsed;
+            StopClapListening();
             _trans?.BeginAnimation(TranslateTransform3D.OffsetZProperty, null);
+        }
+
+        // ---------------------------------------------------------------- 👏 clap event
+
+        /// <summary>Show the microphone tip and start listening for real hand claps.
+        /// No usable mic (unplugged, or blocked by Windows privacy) → the tip switches
+        /// to "tap 👏" and the on-screen button carries the event alone.</summary>
+        private void StartClapListening()
+        {
+            StopClapListening();
+            if (!_hasClapRule) return;
+
+            ClapTip.Visibility = Visibility.Visible;
+            var det = new ClapDetector();
+            det.Clapped += OnMicClap;                      // driver thread → marshalled below
+            bool listening = det.Start();
+            if (listening)
+            {
+                _clapDetector = det;
+                ClapTipText.Text = L("vplClapTip", "Clap your hands — CarthaBot is listening!");
+                ClapMicGlyph.Opacity = 1.0;
+            }
+            else
+            {
+                det.Clapped -= OnMicClap;
+                det.Dispose();
+                ClapTipText.Text = L("vplClapTipNoMic", "No microphone — tap 👏 to clap!");
+                ClapMicGlyph.Opacity = 0.35;
+            }
+        }
+
+        private void StopClapListening()
+        {
+            if (_clapDetector != null)
+            {
+                _clapDetector.Clapped -= OnMicClap;
+                _clapDetector.Dispose();
+                _clapDetector = null;
+            }
+            if (ClapTip != null) ClapTip.Visibility = Visibility.Collapsed;
+        }
+
+        private void OnMicClap() =>
+            Dispatcher.BeginInvoke(new Action(InjectClap));
+
+        private void OnClapButton(object sender, RoutedEventArgs e) => InjectClap();
+
+        private void InjectClap()
+        {
+            if (_rt == null) return;
+            _rt.Clap();
+            // little "heard you!" pop on the mic glyph
+            var pop = new DoubleAnimationUsingKeyFrames();
+            pop.KeyFrames.Add(new EasingDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            pop.KeyFrames.Add(new EasingDoubleKeyFrame(1.45, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.09)), new SineEase { EasingMode = EasingMode.EaseOut }));
+            pop.KeyFrames.Add(new EasingDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.28)), new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.6 }));
+            ClapMicScale.BeginAnimation(ScaleTransform.ScaleXProperty, pop);
+            ClapMicScale.BeginAnimation(ScaleTransform.ScaleYProperty, pop);
         }
 
         // ------------------------------------------------------------------ loop
@@ -473,6 +630,10 @@ namespace CompanionApp.Controls
             FrontDot.Fill = SrcFront ? Brushes.OrangeRed : DimDot;
             LineDot.Fill = SrcLine ? Brushes.White : DimDot;
 
+            // the mic glyph breathes with what the microphone hears ("it's listening!")
+            if (_clapDetector != null)
+                ClapMicGlyph.Opacity = 0.55 + 0.45 * Math.Min(1.0, _clapDetector.Level * 12);
+
             if (!_liveMode)
             {
                 UpdateStateChip();
@@ -480,6 +641,38 @@ namespace CompanionApp.Controls
                     CoinText.Text = $"💰 {_rt.CoinTaken.Count(t => t)}/{World.Coins.Count}";
                 CheckMission(dt);
             }
+            else
+            {
+                UpdateLiveDetails();
+            }
+        }
+
+        /// <summary>Live read-out of the twin's computed motion (live mode only).</summary>
+        private void UpdateLiveDetails()
+        {
+            if (_twin == null) return;
+            double heading = ((_twin.YawDeg % 360) + 360) % 360;
+            string turnWord = _twin.TurnRateDeg > 3 ? "left"
+                            : _twin.TurnRateDeg < -3 ? "right" : "—";
+            string arc = double.IsNaN(_twin.TurnRadius) ? "straight"
+                       : Math.Abs(_twin.TurnRadius) < 0.05 ? "spin in place"
+                       : $"{Math.Abs(_twin.TurnRadius):0.0} u";
+            string lL = _twin.RawLineLeft < 0 ? "?" : _twin.RawLineLeft.ToString();
+            string lR = _twin.RawLineRight < 0 ? "?" : _twin.RawLineRight.ToString();
+            LiveDetailsText.Text = string.Join("\n", new[]
+            {
+                $"L wheel {_twin.LeftCmd,4}  {_twin.LeftSpeed,5:0.0} u/s",
+                $"R wheel {_twin.RightCmd,4}  {_twin.RightSpeed,5:0.0} u/s",
+                $"speed   {_twin.LinearSpeed,6:0.00} u/s",
+                $"turn    {_twin.TurnRateDeg,6:0.0} °/s {turnWord}",
+                $"arc     {arc}",
+                $"heading {heading,6:0} °",
+                $"moved   {_twin.DistanceTraveled,6:0.0} u",
+                $"turned  {_twin.TotalTurnedDeg,6:0} °",
+                "—— sensors ——",
+                $"front    {(_twin.FrontDetected ? "OBSTACLE" : "clear")}",
+                $"line  L={lL} R={lR}  {(_twin.OnLine ? "ON LINE" : "off")}",
+            });
         }
 
         private void UpdateRobotVisual()
@@ -536,6 +729,17 @@ namespace CompanionApp.Controls
 
         private void OnRuntimeSound(VplAction a)
         {
+            // with open speakers our own sound would "clap" back into the microphone
+            if (UiSounds.Enabled)
+                _clapDetector?.SuppressFor(0.35 + a.Sound switch
+                {
+                    SoundKind.Happy => 0.36,
+                    SoundKind.Sad => 0.48,
+                    SoundKind.Siren => 0.48,
+                    SoundKind.Custom => Math.Max(1, a.Notes.Count(n => n.Pitch >= 0)) * (VplCompiler.NoteMs / 1000.0),
+                    _ => 0.15
+                });
+
             if (a.Sound == SoundKind.Custom) UiSounds.Tune(a.Notes);
             else UiSounds.Preset(a.Sound);
 
@@ -552,10 +756,15 @@ namespace CompanionApp.Controls
         {
             if (index >= 0 && index < _coinVisuals.Count)
                 _coinVisuals[index].Content = null;
+            if (UiSounds.Enabled) _clapDetector?.SuppressFor(0.5);
             UiSounds.Coin(_coinsTaken++);          // pitch rises with every coin
         }
 
-        private void OnRuntimeBump() => UiSounds.Bonk();
+        private void OnRuntimeBump()
+        {
+            if (UiSounds.Enabled) _clapDetector?.SuppressFor(0.5);
+            UiSounds.Bonk();
+        }
 
         // ---------------------------------------------------------------- pen trail
 
@@ -738,6 +947,7 @@ namespace CompanionApp.Controls
                         if (!_lineVisited[i] && (rp - cps[i]).Length < 2.0)
                         {
                             _lineVisited[i] = true;
+                            if (UiSounds.Enabled) _clapDetector?.SuppressFor(0.3);
                             UiSounds.Blip();
                             MissionHint.Text = L(_mission.HintKey, "") + $"   ✓ {_lineVisited.Count(v => v)}/3";
                         }
@@ -749,6 +959,7 @@ namespace CompanionApp.Controls
 
             _missionDone = true;
             MissionProgress.MarkDone(_mission.Id);
+            if (UiSounds.Enabled) _clapDetector?.SuppressFor(1.6);
             UiSounds.Fanfare();
             ThrowConfetti();
             CelebrationHops();

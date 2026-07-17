@@ -1,0 +1,543 @@
+<UserControl x:Class="CompanionApp.Draw.Views.DrawView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:local="clr-namespace:CompanionApp.Draw.Views"
+             Background="#192428">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <local:StringToVisibilityConverter x:Key="StrToVis"/>
+
+        <!-- flat, rounded toolbar button -->
+        <Style x:Key="ToolBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="DemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="14 8"/>
+            <Setter Property="Margin" Value="4 2"/>
+            <Setter Property="Background" Value="#2D383C"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Opacity" Value="0.85"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="bd" Property="Opacity" Value="0.7"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="bd" Property="Opacity" Value="0.4"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- big shape stamp button -->
+        <Style x:Key="ShapeBtn" TargetType="Button" BasedOn="{StaticResource ToolBtn}">
+            <Setter Property="Width" Value="84"/>
+            <Setter Property="Height" Value="64"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontSize" Value="30"/>
+            <Setter Property="Background" Value="#22313A"/>
+        </Style>
+
+        <!-- big Small / Medium / Big size choice button -->
+        <Style x:Key="SizeBtn" TargetType="Button" BasedOn="{StaticResource ToolBtn}">
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Background" Value="#22313A"/>
+        </Style>
+
+        <Style x:Key="SliderLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#C7D2D7"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Margin" Value="0 8 0 2"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ===================== TOOLBAR ===================== -->
+        <Border Grid.Row="0" Background="#2D383C" Padding="12 8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="✏️" FontSize="26" VerticalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource drawTitle}" Foreground="White" FontSize="20" FontWeight="Bold"
+                               VerticalAlignment="Center" Margin="8 0 0 0"/>
+                    <Border CornerRadius="11" Padding="10 4" Margin="14 0 0 0" Background="#1C2A30" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#E84358"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                <Setter Property="Fill" Value="#2ECC71"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Text="{Binding ConnectionText}" Foreground="#C7D2D7" FontSize="12.5"
+                                       VerticalAlignment="Center" Margin="7 0 0 0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- connection + actions: a WrapPanel so buttons flow to a second row instead of
+                     being pushed off-screen on narrow windows -->
+                <WrapPanel Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal"
+                           HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Border Background="#1C2A30" CornerRadius="9" Padding="3" Margin="0 0 8 0">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="🔌 USB" Command="{Binding SetModeCommand}" CommandParameter="Usb">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource ToolBtn}">
+                                        <Setter Property="Background" Value="#2D383C"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsUsb}" Value="True">
+                                                <Setter Property="Background" Value="#0060ac"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Content="📶 WiFi" Command="{Binding SetModeCommand}" CommandParameter="Wifi">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource ToolBtn}">
+                                        <Setter Property="Background" Value="#2D383C"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsWifi}" Value="True">
+                                                <Setter Property="Background" Value="#37D67A"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Content="⚙" Style="{StaticResource ToolBtn}" Command="{Binding WifiSetupCommand}"
+                            ToolTip="Set up / change the robot's Wi-Fi"
+                            Visibility="{Binding IsWifi, Converter={StaticResource BoolToVis}}"/>
+
+                    <Button Content="{DynamicResource drawConnect}" Style="{StaticResource ToolBtn}" Command="{Binding ConnectCommand}"/>
+                    <Button x:Name="PreviewBtn" Content="{DynamicResource drawPreview}" Style="{StaticResource ToolBtn}" Click="OnTogglePreview" ToolTip="Show the exact path the robot will trace"/>
+                    <Button Content="{DynamicResource drawCodeBtn}" Style="{StaticResource ToolBtn}" Click="OnToggleCode" ToolTip="See the MicroPython that gets sent"/>
+                    <Button x:Name="SendBtn" Content="{DynamicResource drawSend}" Style="{StaticResource ToolBtn}" Click="OnSend"
+                            IsEnabled="{Binding CanSend}">
+                        <Button.Background><SolidColorBrush Color="#EE7B2F"/></Button.Background>
+                    </Button>
+                    <Button Content="{DynamicResource drawStop}" Style="{StaticResource ToolBtn}" Command="{Binding StopCommand}"/>
+                    <Button Content="❓" Style="{StaticResource ToolBtn}" Command="{Binding HelpCommand}" ToolTip="How to use the Draw studio"/>
+                    <Button Content="✖" Style="{StaticResource ToolBtn}" Command="{Binding CloseCommand}"/>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===================== MAIN ===================== -->
+        <Grid Grid.Row="1" Margin="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- shape palette + pen tools -->
+            <Border Grid.Column="0" Background="#22313A" CornerRadius="14" Padding="10" Margin="0 0 12 0">
+                <StackPanel Width="196">
+                    <!-- Air draw: trace a shape in the air with your hand in front of the camera -->
+                    <Button x:Name="AirDrawBtn" Content="{DynamicResource drawAirBtn}" Style="{StaticResource ToolBtn}"
+                            HorizontalAlignment="Stretch" Margin="0 0 0 4" FontSize="15" Padding="10 11" Click="OnOpenAirDraw"
+                            ToolTip="Move your hand in front of the camera to draw in the air!">
+                        <Button.Background><SolidColorBrush Color="#8E44AD"/></Button.Background>
+                    </Button>
+                    <Separator Margin="2 8" Background="#33454F"/>
+
+                    <TextBlock Text="{DynamicResource drawStampShape}" Foreground="White" FontWeight="Bold" FontSize="15" Margin="2 0 0 6"/>
+                    <WrapPanel>
+                        <Button Style="{StaticResource ShapeBtn}" Content="◻" Click="OnStampShape" Tag="Square"  ToolTip="Square"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="△" Click="OnStampShape" Tag="Triangle" ToolTip="Triangle"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="◯" Click="OnStampShape" Tag="Circle"  ToolTip="Circle"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="★" Click="OnStampShape" Tag="Star"    ToolTip="Star"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="♥" Click="OnStampShape" Tag="Heart"   ToolTip="Heart"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="⋀⋁" FontSize="20" Click="OnStampShape" Tag="Zigzag" ToolTip="Zig-zag"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="🌀" Click="OnStampShape" Tag="Spiral" ToolTip="Spiral"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="🏠" Click="OnStampShape" Tag="House" ToolTip="House"/>
+                        <Button Style="{StaticResource ShapeBtn}" Content="➡" Click="OnStampShape" Tag="Arrow" ToolTip="Arrow"/>
+                    </WrapPanel>
+
+                    <Separator Margin="2 12" Background="#33454F"/>
+
+                    <TextBlock Text="{DynamicResource drawPenSection}" Foreground="White" FontWeight="Bold" FontSize="15" Margin="2 0 0 6"/>
+                    <Button x:Name="OneLineBtn" Content="✏️ One line: ON" Style="{StaticResource ToolBtn}" HorizontalAlignment="Stretch" Margin="0 2" Click="OnToggleOneLine"
+                            ToolTip="The pen can't lift — draw in one continuous line. Turn off to allow multiple strokes (joined by thin travel lines).">
+                        <Button.Background><SolidColorBrush Color="#2E7D5B"/></Button.Background>
+                    </Button>
+                    <Button x:Name="EraseBtn" Content="{DynamicResource drawEraseOff}" Style="{StaticResource ToolBtn}" HorizontalAlignment="Stretch" Margin="0 2" Click="OnToggleErase"/>
+                    <Button Content="{DynamicResource drawUndo}" Style="{StaticResource ToolBtn}" HorizontalAlignment="Stretch" Margin="0 2" Click="OnUndo"/>
+                    <Button Content="{DynamicResource drawClear}" Style="{StaticResource ToolBtn}" HorizontalAlignment="Stretch" Margin="0 2" Click="OnClear"/>
+                    <Grid Margin="0 2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="{DynamicResource drawSaveBtn}" Style="{StaticResource ToolBtn}" Margin="0 0 3 0" Click="OnSaveDrawing"/>
+                        <Button Grid.Column="1" Content="{DynamicResource drawOpenBtn}" Style="{StaticResource ToolBtn}" Margin="3 0 0 0" Click="OnOpenDrawing"/>
+                    </Grid>
+
+                    <Separator Margin="2 12" Background="#33454F"/>
+                    <TextBlock Text="{DynamicResource drawWriteWord}" Foreground="White" FontWeight="Bold" FontSize="15" Margin="2 0 0 6"/>
+                    <TextBox x:Name="TextInput" Background="#1C2A30" Foreground="White" CaretBrush="White"
+                             BorderBrush="#33454F" BorderThickness="1" Padding="6 5" FontSize="14"
+                             CharacterCasing="Upper" MaxLength="12" ToolTip="A–Z and 0–9"/>
+                    <Button Content="{DynamicResource drawStampText}" Style="{StaticResource ToolBtn}" HorizontalAlignment="Stretch" Margin="0 6 0 0" Click="OnStampText"/>
+
+                    <Border Background="#1C2A30" CornerRadius="9" Padding="10" Margin="0 12 0 0">
+                        <TextBlock Foreground="#9FB0B7" FontSize="11.5" TextWrapping="Wrap"
+                                   Text="{DynamicResource drawPenNote}"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- the paper / ink canvas -->
+            <Border Grid.Column="1" CornerRadius="14" ClipToBounds="True" BorderBrush="#33454F" BorderThickness="2">
+                <Grid>
+                    <InkCanvas x:Name="InkPad" Background="White" EditingMode="Ink"/>
+                    <!-- planned robot path overlay (drawn from code-behind when Preview is on) -->
+                    <Canvas x:Name="PreviewLayer" IsHitTestVisible="False"/>
+                    <!-- one-line reminder for little artists -->
+                    <Border IsHitTestVisible="False" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0 12 0 0"
+                            Background="#CC2E7D5B" CornerRadius="16" Padding="16 7">
+                        <TextBlock Text="✏️ Draw in ONE line — don't lift! The pen can't jump." Foreground="White"
+                                   FontSize="14" FontWeight="DemiBold"/>
+                    </Border>
+                    <TextBlock IsHitTestVisible="False" Foreground="#C8D2D6" FontSize="13" Margin="12"
+                               VerticalAlignment="Bottom" HorizontalAlignment="Left"
+                               Text="{DynamicResource drawCanvasHint}"/>
+
+                    <!-- generated MicroPython overlay -->
+                    <Border Background="#F2192428" Visibility="{Binding ShowCode, Converter={StaticResource BoolToVis}}">
+                        <Grid Margin="16">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0" Margin="0 0 0 8">
+                                <TextBlock Text="Generated MicroPython (sent to CarthaBot)" Foreground="White"
+                                           FontWeight="Bold" FontSize="15" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="📋 Copy" Style="{StaticResource ToolBtn}" Click="OnCopyCode"/>
+                                    <Button Content="💾 Save .py" Style="{StaticResource ToolBtn}" Click="OnSaveCode"/>
+                                    <Button Content="✖ Close" Style="{StaticResource ToolBtn}" Click="OnToggleCode"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border Grid.Row="1" Background="#10181C" CornerRadius="8" BorderBrush="#33454F" BorderThickness="1">
+                                <TextBox Text="{Binding GeneratedCode, Mode=OneWay}" IsReadOnly="True" BorderThickness="0"
+                                         Background="Transparent" Foreground="#C7F0D8" FontFamily="Consolas" FontSize="12.5"
+                                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                         TextWrapping="NoWrap" Padding="12"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- simple setup: which way the robot faces + how big. All the tuning (powers, smoothing,
+                 passes) is picked automatically; the one-time accuracy calibration lives in a
+                 collapsed grown-ups section so kids never see it. -->
+            <Border Grid.Column="2" Background="#22313A" CornerRadius="14" Padding="12" Margin="12 0 0 0">
+                <StackPanel Width="230">
+                    <TextBlock Text="{DynamicResource drawSizeCalib}" Foreground="White" FontWeight="Bold" FontSize="15"/>
+
+                    <TextBlock Style="{StaticResource SliderLabel}">
+                        <Run Text="{DynamicResource drawRobotFaces}"/><Run Text="{Binding FacingArrow, Mode=OneWay}" FontWeight="Bold" Foreground="#FFD7A6"/>
+                    </TextBlock>
+                    <UniformGrid Rows="1" Columns="4">
+                        <Button Content="↑" Style="{StaticResource ToolBtn}" Margin="2" Command="{Binding SetFacingCommand}" CommandParameter="up"/>
+                        <Button Content="→" Style="{StaticResource ToolBtn}" Margin="2" Command="{Binding SetFacingCommand}" CommandParameter="right"/>
+                        <Button Content="↓" Style="{StaticResource ToolBtn}" Margin="2" Command="{Binding SetFacingCommand}" CommandParameter="down"/>
+                        <Button Content="←" Style="{StaticResource ToolBtn}" Margin="2" Command="{Binding SetFacingCommand}" CommandParameter="left"/>
+                    </UniformGrid>
+
+                    <TextBlock Text="{DynamicResource drawSizeLbl}" Style="{StaticResource SliderLabel}" Margin="0 14 0 2"/>
+                    <UniformGrid Rows="1" Columns="3">
+                        <Button Command="{Binding SetSizeCommand}" CommandParameter="small" ToolTip="10 cm">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SizeBtn}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSizeSmall}" Value="True">
+                                            <Setter Property="Background" Value="#0060ac"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel>
+                                <TextBlock Text="🐭" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource drawSizeSmall}" FontSize="11" HorizontalAlignment="Center" Margin="0 2 0 0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SetSizeCommand}" CommandParameter="medium" ToolTip="20 cm">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SizeBtn}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSizeMedium}" Value="True">
+                                            <Setter Property="Background" Value="#0060ac"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel>
+                                <TextBlock Text="🐰" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource drawSizeMedium}" FontSize="11" HorizontalAlignment="Center" Margin="0 2 0 0"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SetSizeCommand}" CommandParameter="big" ToolTip="30 cm">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SizeBtn}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSizeBig}" Value="True">
+                                            <Setter Property="Background" Value="#0060ac"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel>
+                                <TextBlock Text="🐻" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource drawSizeBig}" FontSize="11" HorizontalAlignment="Center" Margin="0 2 0 0"/>
+                            </StackPanel>
+                        </Button>
+                    </UniformGrid>
+
+                    <Border Background="#1C2A30" CornerRadius="9" Padding="10" Margin="0 14 0 0">
+                        <TextBlock Foreground="#9FE8C7" FontSize="11.5" TextWrapping="Wrap"
+                                   Text="{DynamicResource drawAutoNote}"/>
+                    </Border>
+
+                    <!-- one-time accuracy calibration, collapsed so children never meet it -->
+                    <Expander Margin="0 14 0 0" IsExpanded="False" Foreground="#9FB0B7">
+                        <Expander.Header>
+                            <TextBlock Text="{DynamicResource drawGrownUps}" Foreground="#9FB0B7" FontSize="12" FontWeight="DemiBold"
+                                       TextWrapping="Wrap" MaxWidth="180"/>
+                        </Expander.Header>
+                        <StackPanel Margin="0 8 0 0">
+                            <TextBlock Text="{DynamicResource drawTuneReal}" Foreground="#9FE8C7" FontSize="12.5" FontWeight="DemiBold"/>
+                            <Grid Margin="0 6 0 2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="📏 100 mm" Style="{StaticResource ToolBtn}" Margin="0 0 3 0"
+                                        Command="{Binding TestLineCommand}" ToolTip="Draw a straight 100 mm line to measure"/>
+                                <Button Grid.Column="1" Content="↻ 90°" Style="{StaticResource ToolBtn}" Margin="3 0 0 0"
+                                        Command="{Binding TestTurnCommand}" ToolTip="Spin exactly 90° to check the turn rate"/>
+                            </Grid>
+
+                            <!-- one-tap self-calibration: tap what you saw, the app corrects itself -->
+                            <TextBlock Text="{DynamicResource drawCalHint}" Foreground="#9FB0B7" FontSize="11"
+                                       TextWrapping="Wrap" Margin="0 6 0 2"/>
+                            <Grid Margin="0 2 0 2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0 0 3 0">
+                                    <Button Content="{DynamicResource drawCalLineLong}" Style="{StaticResource ToolBtn}" FontSize="11" Padding="6 5" Margin="0 2"
+                                            HorizontalAlignment="Stretch" Command="{Binding NudgeCommand}" CommandParameter="lineLong"/>
+                                    <Button Content="{DynamicResource drawCalLineShort}" Style="{StaticResource ToolBtn}" FontSize="11" Padding="6 5" Margin="0 2"
+                                            HorizontalAlignment="Stretch" Command="{Binding NudgeCommand}" CommandParameter="lineShort"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="3 0 0 0">
+                                    <Button Content="{DynamicResource drawCalTurnFar}" Style="{StaticResource ToolBtn}" FontSize="11" Padding="6 5" Margin="0 2"
+                                            HorizontalAlignment="Stretch" Command="{Binding NudgeCommand}" CommandParameter="turnFar"/>
+                                    <Button Content="{DynamicResource drawCalTurnShort}" Style="{StaticResource ToolBtn}" FontSize="11" Padding="6 5" Margin="0 2"
+                                            HorizontalAlignment="Stretch" Command="{Binding NudgeCommand}" CommandParameter="turnShort"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Style="{StaticResource SliderLabel}">
+                                <Run Text="{DynamicResource drawSpeedLbl}"/><Run Text="{Binding MmPerSec, StringFormat=0}"/><Run Text=" mm/s"/>
+                            </TextBlock>
+                            <Slider Minimum="20" Maximum="250" Value="{Binding MmPerSec}"/>
+
+                            <TextBlock Style="{StaticResource SliderLabel}">
+                                <Run Text="{DynamicResource drawTrackLbl}"/><Run Text="{Binding TrackMm, StringFormat=0}"/><Run Text=" mm"/>
+                            </TextBlock>
+                            <Slider Minimum="60" Maximum="200" Value="{Binding TrackMm}"/>
+
+                            <Border Background="#1C2A30" CornerRadius="9" Padding="10" Margin="0 12 0 0">
+                                <TextBlock Foreground="#9FB0B7" FontSize="11" TextWrapping="Wrap"
+                                           Text="{DynamicResource drawTuneNote}"/>
+                            </Border>
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ===================== STATUS ===================== -->
+        <Border Grid.Row="2" Background="#2D383C" Padding="14 8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Status}" Foreground="#9FE8C7" FontSize="13.5" FontWeight="DemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                <Border Grid.Column="1" Background="#1C2A30" CornerRadius="9" Padding="12 4" Margin="10 0 0 0"
+                        Visibility="{Binding Plan, Converter={StaticResource StrToVis}}">
+                    <TextBlock Text="{Binding Plan}" Foreground="#FFD7A6" FontSize="13" FontWeight="DemiBold" VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ===================== HELP OVERLAY ===================== -->
+        <Border Grid.Row="0" Grid.RowSpan="3" Background="#E6101A1E"
+                Visibility="{Binding ShowHelp, Converter={StaticResource BoolToVis}}">
+            <Border Width="560" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#16242B"
+                    CornerRadius="16" Padding="26" BorderBrush="#33454F" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource drawHelpTitle}" Foreground="White" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <StackPanel Margin="0 16 0 0">
+                        <TextBlock Foreground="#C7D2D7" FontSize="14" TextWrapping="Wrap" Margin="0 0 0 8"
+                                   Text="{DynamicResource drawHelp1}"/>
+                        <TextBlock Foreground="#C7D2D7" FontSize="14" TextWrapping="Wrap" Margin="0 0 0 8"
+                                   Text="{DynamicResource drawHelp2}"/>
+                        <TextBlock Foreground="#C7D2D7" FontSize="14" TextWrapping="Wrap" Margin="0 0 0 8"
+                                   Text="{DynamicResource drawHelp3}"/>
+                        <TextBlock Foreground="#9FE8C7" FontSize="14" TextWrapping="Wrap" Margin="0 0 0 8" FontWeight="DemiBold"
+                                   Text="{DynamicResource drawHelp4}"/>
+                        <TextBlock Foreground="#FFD7A6" FontSize="13" TextWrapping="Wrap" Margin="0 6 0 0"
+                                   Text="{DynamicResource drawHelpTip}"/>
+                    </StackPanel>
+                    <Button Content="{DynamicResource drawGotIt}" Command="{Binding HelpCommand}" Style="{StaticResource ToolBtn}"
+                            HorizontalAlignment="Center" Margin="0 18 0 0" Padding="28 9">
+                        <Button.Background><SolidColorBrush Color="#EE7B2F"/></Button.Background>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- ===================== FIRST-TIME WI-FI SETUP ===================== -->
+        <Border Grid.Row="0" Grid.RowSpan="3" Background="#E6101A1E"
+                Visibility="{Binding ShowWifiSetup, Converter={StaticResource BoolToVis}}">
+            <Border Width="470" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#16242B"
+                    CornerRadius="16" Padding="26" BorderBrush="#33454F" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="📡 Put CarthaBot on your Wi-Fi" Foreground="White" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="First time over Wi-Fi: pick your network, type the password, plug the robot in with the USB cable, then Save. It joins your Wi-Fi and remembers it — next time it connects with no cable."
+                               Foreground="#9FB0B7" FontSize="12.5" TextWrapping="Wrap" TextAlignment="Center" Margin="0 6 0 16"/>
+
+                    <TextBlock Text="Pick your Wi-Fi network" Foreground="#9FB0B7" FontSize="12" Margin="0 0 0 4"/>
+                    <Grid Margin="0 0 0 12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0" ItemsSource="{Binding ScannedNetworks}" SelectedItem="{Binding SelectedNetwork}"
+                                  DisplayMemberPath="Display" FontSize="13" Padding="6 4" Height="32"/>
+                        <Button Grid.Column="1" Content="🔄 Scan" Command="{Binding ScanWifiCommand}" Margin="8 0 0 0"
+                                Background="#22313A" Foreground="#9FE8C7" BorderThickness="0" Padding="12 6" Cursor="Hand" FontSize="12" FontWeight="DemiBold"/>
+                    </Grid>
+
+                    <TextBlock Text="…or type the name" Foreground="#9FB0B7" FontSize="12" Margin="0 0 0 4"/>
+                    <TextBox Text="{Binding WifiSsidInput, UpdateSourceTrigger=PropertyChanged}" Background="#1C2A30" Foreground="White" CaretBrush="White" BorderBrush="#33454F" BorderThickness="1" Padding="8 6" FontSize="13"/>
+                    <TextBlock Text="Wi-Fi password" Foreground="#9FB0B7" FontSize="12" Margin="0 12 0 4"/>
+                    <TextBox Text="{Binding WifiPassword, UpdateSourceTrigger=PropertyChanged}" Background="#1C2A30" Foreground="White" CaretBrush="White" BorderBrush="#33454F" BorderThickness="1" Padding="8 6" FontSize="13"/>
+                    <TextBlock Text="Tip: the robot only joins 2.4 GHz Wi-Fi (not 5 GHz)." Foreground="#9FB0B7" FontSize="11" TextWrapping="Wrap" Margin="0 6 0 0"/>
+
+                    <TextBlock Text="Robot address (advanced — usually leave as is)" Foreground="#9FB0B7" FontSize="12" Margin="0 12 0 4"/>
+                    <TextBox Text="{Binding WifiEndpoint, UpdateSourceTrigger=PropertyChanged}" Background="#1C2A30" Foreground="White" CaretBrush="White"
+                             BorderBrush="#33454F" BorderThickness="1" Padding="8 6" FontSize="13" FontFamily="Consolas"/>
+
+                    <Button Content="💾  Save to robot (USB cable) &amp; connect" Command="{Binding SaveWifiCommand}" IsEnabled="{Binding CanProvision}"
+                            Background="#37D67A" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="10 11" Margin="0 16 0 0" Cursor="Hand" FontSize="14"/>
+                    <TextBlock Margin="0 10 0 0" Foreground="#F2C94C" FontSize="12.5" FontWeight="DemiBold" HorizontalAlignment="Center" Text="⏳ Working… please wait"
+                               Visibility="{Binding IsProvisioning, Converter={StaticResource BoolToVis}}"/>
+
+                    <Border Background="#22313A" CornerRadius="8" Padding="10" Margin="0 14 0 0">
+                        <TextBlock Text="{Binding ProvisionStatus}" Foreground="#9FE8C7" FontSize="12.5" TextWrapping="Wrap"/>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 14 0 0">
+                        <Button Content="Skip — it's already on Wi-Fi" Command="{Binding SkipWifiCommand}" Background="#22313A" Foreground="#9FE8C7" BorderThickness="0" Padding="12 8" Margin="0 0 8 0" Cursor="Hand"/>
+                        <Button Content="Close" Command="{Binding CloseWifiSetupCommand}" Background="#2d383c" Foreground="White" BorderThickness="0" Padding="12 8" Cursor="Hand"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- ===================== AIR-DRAW (CAMERA) OVERLAY ===================== -->
+        <Border x:Name="AirOverlay" Grid.Row="0" Grid.RowSpan="3" Background="#F0101A1E" Visibility="Collapsed">
+            <Border VerticalAlignment="Center" HorizontalAlignment="Center" Background="#16242B"
+                    CornerRadius="18" Padding="22" BorderBrush="#33454F" BorderThickness="1" MaxWidth="760">
+                <StackPanel>
+                    <Grid Margin="0 0 0 10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="✋" FontSize="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource drawAirTitle}" Foreground="White" FontSize="21" FontWeight="Bold"
+                                       VerticalAlignment="Center" Margin="8 0 0 0"/>
+                        </StackPanel>
+                        <Button Content="✖" Style="{StaticResource ToolBtn}" HorizontalAlignment="Right" Click="OnCloseAirDraw"/>
+                    </Grid>
+
+                    <!-- live camera + drawing overlay, letterboxed uniformly (internal coords are 640x480) -->
+                    <Border CornerRadius="12" ClipToBounds="True" BorderBrush="#33454F" BorderThickness="2" Background="Black">
+                        <Grid>
+                            <Viewbox Stretch="Uniform" MaxHeight="420">
+                                <Grid Width="640" Height="480">
+                                    <Image x:Name="CamImage" Stretch="Fill"/>
+                                    <Canvas x:Name="CamOverlay" Width="640" Height="480" IsHitTestVisible="False"/>
+                                </Grid>
+                            </Viewbox>
+                            <!-- shown only when the webcam can't be opened -->
+                            <TextBlock x:Name="CamError" Foreground="#FFB4B4" FontSize="15" FontWeight="DemiBold"
+                                       TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- step-by-step hint for the child / grown-up -->
+                    <Border Background="#1C2A30" CornerRadius="10" Padding="12 9" Margin="0 12 0 0">
+                        <TextBlock x:Name="AirHint" Foreground="#9FE8C7" FontSize="14" FontWeight="DemiBold"
+                                   TextWrapping="Wrap" Text="{DynamicResource drawAirHintLock}"/>
+                    </Border>
+
+                    <!-- controls -->
+                    <WrapPanel HorizontalAlignment="Center" Margin="0 14 0 0">
+                        <Button x:Name="AirLockBtn" Content="{DynamicResource drawAirLock}" Style="{StaticResource ToolBtn}"
+                                FontSize="15" Padding="16 10" Click="OnAirLock">
+                            <Button.Background><SolidColorBrush Color="#2E7D5B"/></Button.Background>
+                        </Button>
+                        <Button x:Name="AirHoldBtn" Content="{DynamicResource drawAirHold}" Style="{StaticResource ToolBtn}"
+                                FontSize="15" Padding="16 10" IsEnabled="False"
+                                PreviewMouseLeftButtonDown="OnAirHoldDown" PreviewMouseLeftButtonUp="OnAirHoldUp"
+                                MouseLeave="OnAirHoldUp"
+                                ToolTip="No pinch? Hold this button down to draw instead.">
+                            <Button.Background><SolidColorBrush Color="#EE7B2F"/></Button.Background>
+                        </Button>
+                        <Button x:Name="AirAgainBtn" Content="{DynamicResource drawAirAgain}" Style="{StaticResource ToolBtn}"
+                                FontSize="15" Padding="16 10" IsEnabled="False" Click="OnAirAgain"/>
+                        <Button x:Name="AirUseBtn" Content="{DynamicResource drawAirUse}" Style="{StaticResource ToolBtn}"
+                                FontSize="15" Padding="16 10" IsEnabled="False" Click="OnAirUse">
+                            <Button.Background><SolidColorBrush Color="#0060ac"/></Button.Background>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

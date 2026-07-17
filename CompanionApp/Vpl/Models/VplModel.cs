@@ -13,7 +13,8 @@ namespace CarthaBotVPL.Models
         Button,     // one of the 5 physical buttons (▲ ▼ ◀ ▶ ●)
         Obstacle,   // front IR sensor – something is in front of the robot
         Line,       // ground IR sensor – the robot is over a line / edge
-        Timer       // the timer started by a Timer action has elapsed (advanced mode)
+        Timer,      // the timer started by a Timer action has elapsed (advanced mode)
+        Clap        // the PC microphone heard a clap (simulator only — the robot has no mic)
     }
 
     public enum ButtonDir { Center, Up, Down, Left, Right }

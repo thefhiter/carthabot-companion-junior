@@ -1,5 +1,6 @@
 ﻿using AdvancedProgramming.Events;
 using AdvancedProgramming.Views;
+using CarthaBotVPL.Services;
 using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Events;
@@ -16,6 +17,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -84,8 +86,18 @@ namespace AdvancedProgramming.ViewModels
             }
         }
 
-        // Serial Port
-        private SerialPort _serialPort;
+        // Transport (USB serial / WiFi TCP) — the MicroPython paste-mode REPL
+        // protocol is identical on every carrier; only the pipe changes.
+        private ITransport _transport;
+
+        // Connection selection. Defaults to USB so the existing behaviour is byte-for-byte
+        // unchanged; the host chooser calls Configure(...) to switch to WiFi.
+        private ConnectionMode _mode = ConnectionMode.Usb;
+        private string _wifiEndpoint = "carthabot.local:3333";
+
+        // Background polling reader loop (replaces SerialPort.DataReceived).
+        private Thread _reader;
+        private volatile bool _reading;
 
         private ObservableCollection<string> _comPorts;
         public ObservableCollection<string> ComPorts
@@ -103,7 +115,17 @@ namespace AdvancedProgramming.ViewModels
         public bool IsConnected
         {
             get { return _isConnected; }
-            set { SetProperty(ref _isConnected, value); IsEnabled = !IsConnected; }
+            set
+            {
+                SetProperty(ref _isConnected, value);
+                IsEnabled = !IsConnected;
+                RaisePropertyChanged(nameof(CanRunScript));
+                RaisePropertyChanged(nameof(CanStopScript));
+                // Re-evaluate the toolbar commands now that the link state changed.
+                SendCommand?.RaiseCanExecuteChanged();
+                RunScriptCommand?.RaiseCanExecuteChanged();
+                StopScriptCommand?.RaiseCanExecuteChanged();
+            }
         }
         private bool _isEnabled;
         public bool IsEnabled
@@ -182,23 +204,52 @@ namespace AdvancedProgramming.ViewModels
         }
 
         /// <summary>
+        /// Pick the connection carrier before ConnectMethod() runs. The view's USB ctor never
+        /// calls this (USB stays the default), while the WiFi ctor calls it with the chosen
+        /// mode and the endpoint ("host:port").
+        /// </summary>
+        public void Configure(ConnectionMode mode, string param)
+        {
+            _mode = mode;
+            if (mode == ConnectionMode.Wifi && !string.IsNullOrWhiteSpace(param)) _wifiEndpoint = param;
+        }
+
+        /// <summary>Build the transport for the selected Mode (mirrors VplViewModel / KidsCodingViewModel).</summary>
+        private ITransport BuildTransport()
+        {
+            switch (_mode)
+            {
+                case ConnectionMode.Wifi:
+                    string host = "carthabot.local";
+                    int port = 3333;
+                    if (!string.IsNullOrWhiteSpace(_wifiEndpoint))
+                    {
+                        var parts = _wifiEndpoint.Split(':');
+                        host = parts[0].Trim();
+                        if (parts.Length > 1) int.TryParse(parts[1].Trim(), out port);
+                    }
+                    return new WifiTransport(host, port);
+                default:
+                    // USB: SerialTransport picks the freshly-flashed COM (current ports minus OldCom).
+                    return new SerialTransport(OldCom ?? new List<string>());
+            }
+        }
+
+        /// <summary>
         /// Connect to MicroPython device
         /// </summary>
         /// 
         private void Disconnect()
         {
-            if (_serialPort == null) return;
+            StopReader();
+
+            if (_transport == null) { IsConnected = false; return; }
 
             try
             {
-                // Detach event first so no background reads fire
-                _serialPort.DataReceived -= _serialPort_DataReceived;
-
-                // Try to stop running script (but no Ctrl+D!)
-                try { _serialPort.Write("\x03"); } catch { }
-
-                // ⚠️ Do NOT call Close/Dispose synchronously – this is what crashes with Pico
-                // Instead just drop the reference
+                // Try to stop a running script (Ctrl+C) then drop the link.
+                try { _ = _transport.WriteAsync(new byte[] { 0x03 }); } catch { }
+                try { _transport.Close(); } catch { }
             }
             catch (Exception ex)
             {
@@ -206,44 +257,40 @@ namespace AdvancedProgramming.ViewModels
             }
             finally
             {
-                _serialPort = null;
+                _transport = null;
                 IsConnected = false;
             }
         }
 
-
-
-        public void ConnectMethod()
+        /// <summary>
+        /// Open the robot link over the selected carrier (USB / WiFi / BLE). The USB path keeps
+        /// the exact same effective behaviour: SerialTransport opens the freshly-flashed COM
+        /// (current ports minus OldCom) and wakes the REPL with Ctrl+C.
+        /// </summary>
+        public async void ConnectMethod()
         {
+            if (IsConnected) return;
+
             try
             {
-               COM = (new List<string>(SerialPort.GetPortNames())).Except(OldCom).First();
+                // Drop any previous link first.
+                StopReader();
+                try { _transport?.Close(); } catch { }
+                _transport = null;
+                IsConnected = false;
 
-                if (IsConnected)
+                var t = BuildTransport();
+                t.Status += s => AppendCliOutput(s);
+
+                bool ok = await t.ConnectAsync();
+                _transport = ok ? t : null;
+                IsConnected = ok;
+
+                if (ok)
                 {
-                    //Disconnect();   // safe disconnect (no crash)
+                    if (_transport.Mode == ConnectionMode.Usb) COM = "USB";
+                    StartReader();
                 }
-                else
-                {
-                    if (SelectedPort == -1) return;
-
-                    // Always recreate the SerialPort object fresh
-                    _serialPort = new SerialPort
-                    {
-                        PortName = COM,
-                        BaudRate = 115200,
-                        Encoding = Encoding.ASCII,
-                        NewLine = "\r\n"
-                    };
-
-                    _serialPort.DataReceived += _serialPort_DataReceived;
-                    _serialPort.Open();
-                    IsConnected = _serialPort.IsOpen;
-
-                    // Wake up REPL
-                    _serialPort.WriteLine("");
-                }
-
             }
             catch (Exception ex)
             {
@@ -252,61 +299,90 @@ namespace AdvancedProgramming.ViewModels
             }
         }
 
-        /// <summary>
-        /// Handles serial port data received
-        /// Only appends output from MicroPython, not sent script
-        /// </summary>
-        private void _serialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        #region Reader loop (polling, replaces SerialPort.DataReceived)
+
+        private void StartReader()
         {
-            try
+            StopReader();
+            _reading = true;
+            _reader = new Thread(ReaderLoop) { IsBackground = true, Name = "CarthaBot REPL reader" };
+            _reader.Start();
+        }
+
+        private void StopReader()
+        {
+            _reading = false;
+            _reader = null;
+        }
+
+        /// <summary>
+        /// Poll the transport for incoming bytes, split into lines, and stream MicroPython
+        /// output to the CLI — keeping the original filtering (drop pure ">>>" / "..." prompts).
+        /// Works identically over USB, WiFi and BLE because it only uses ITransport.ReadExisting().
+        /// </summary>
+        private void ReaderLoop()
+        {
+            var buffer = new StringBuilder();
+            while (_reading && _transport != null && _transport.IsConnected)
             {
-                if (_serialPort == null) return;
-                while (_serialPort.BytesToRead > 0)
+                string chunk = null;
+                try { chunk = _transport.ReadExisting(); }
+                catch { break; }
+
+                if (string.IsNullOrEmpty(chunk)) { Thread.Sleep(15); continue; }
+                buffer.Append(chunk);
+
+                int nl;
+                while ((nl = IndexOf(buffer, '\n')) >= 0)
                 {
-                    string line = _serialPort.ReadLine();
-                    // Only append actual output, ignore REPL prompts or sent code
-                    if (!string.IsNullOrWhiteSpace(line) && !line.StartsWith(">>>") && !line.StartsWith("..."))
-                    {
-                        AppendCliOutput(line);
-                    }
+                    string line = buffer.ToString(0, nl);
+                    buffer.Remove(0, nl + 1);
+                    line = line.TrimEnd('\r');
 
-                    // REPL prompt indicates script finished
-                    if (line.Trim().EndsWith(">>>"))
-                    {
-                        //IsScriptRunning = false;
-                        AppendCliOutput(line);
+                    string trimmed = line.Trim();
+                    // Skip lines that are just bare REPL prompts.
+                    if (trimmed == ">>>" || trimmed == "...") continue;
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (line.StartsWith(">>>") || line.StartsWith("...")) continue;
 
-                    }
+                    AppendCliOutput(line);
                 }
-            }
-            catch (Exception ex)
-            {
-                AppendCliOutput("Read error: " + ex.Message);
+
+                if (buffer.Length > 8192) buffer.Clear(); // guard against runaway noise
             }
         }
+
+        private static int IndexOf(StringBuilder sb, char c)
+        {
+            for (int i = 0; i < sb.Length; i++) if (sb[i] == c) return i;
+            return -1;
+        }
+
+        #endregion
 
         /// <summary>
         /// Append text into CLI Output (thread-safe)
         /// </summary>
         private void AppendCliOutput(string text)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                CliOutput += text + Environment.NewLine;
-            });
+            var app = Application.Current;
+            if (app == null) return; // app shutting down — don't crash the reader thread
+            try { app.Dispatcher.Invoke(() => { CliOutput += text + Environment.NewLine; }); }
+            catch { /* dispatcher gone / detached — ignore */ }
         }
 
         /// <summary>
         /// Send single-line CLI command
         /// </summary>
-        private void SendMethod()
+        private async void SendMethod()
         {
             if (string.IsNullOrWhiteSpace(CommandLine))
                 return;
 
             try
             {
-                _serialPort?.WriteLine(CommandLine);
+                if (_transport != null && _transport.IsConnected)
+                    await _transport.WriteAsync(Encoding.ASCII.GetBytes(CommandLine + "\r\n"));
                 // Do not show sent command in CLI
                 CommandLine = string.Empty;
             }
@@ -321,21 +397,24 @@ namespace AdvancedProgramming.ViewModels
             get { return _carRun; }
             set { SetProperty(ref _carRun, value); }
         }
+
+        private bool IsOpen => _transport != null && _transport.IsConnected;
+
         private bool CanSend()
         {
-            CarRun = !string.IsNullOrWhiteSpace(CommandLine) && _serialPort?.IsOpen == true;
-            return !string.IsNullOrWhiteSpace(CommandLine) && _serialPort?.IsOpen == true;
+            CarRun = !string.IsNullOrWhiteSpace(CommandLine) && IsOpen;
+            return !string.IsNullOrWhiteSpace(CommandLine) && IsOpen;
         }
 
-        private bool CanRunScript => !IsScriptRunning && !string.IsNullOrWhiteSpace(PythonScript) && _serialPort?.IsOpen == true;
-        private bool CanStopScript => IsScriptRunning && _serialPort?.IsOpen == true;
+        private bool CanRunScript => !IsScriptRunning && !string.IsNullOrWhiteSpace(PythonScript) && IsOpen;
+        private bool CanStopScript => IsScriptRunning && IsOpen;
 
         /// <summary>
         /// Run script using raw REPL, CLI shows only MicroPython output
         /// </summary>
         private async void RunScriptViaRawREPL()
         {
-            if (_serialPort == null || !_serialPort.IsOpen || string.IsNullOrWhiteSpace(PythonScript))
+            if (!IsOpen || string.IsNullOrWhiteSpace(PythonScript))
                 return;
 
             try
@@ -343,15 +422,14 @@ namespace AdvancedProgramming.ViewModels
                 IsScriptRunning = true;
 
                 // Enter paste mode
-                _serialPort.Write(new byte[] { 0x05 }, 0, 1); // Ctrl+E
+                await _transport.WriteAsync(new byte[] { 0x05 }); // Ctrl+E
                 await Task.Delay(100);
 
                 // Send the script itself (no Ctrl+E inside!)
-                _serialPort.Write(Encoding.ASCII.GetBytes(PythonScript.Replace("\r\n", "\n") + "\n"), 0,
-                                  Encoding.ASCII.GetByteCount(PythonScript.Replace("\r\n", "\n") + "\n"));
+                await _transport.WriteAsync(Encoding.ASCII.GetBytes(PythonScript.Replace("\r\n", "\n") + "\n"));
 
                 // End paste mode and run
-                _serialPort.Write(new byte[] { 0x04 }, 0, 1); // Ctrl+D
+                await _transport.WriteAsync(new byte[] { 0x04 }); // Ctrl+D
 
             }
             catch (Exception ex)
@@ -364,11 +442,12 @@ namespace AdvancedProgramming.ViewModels
         /// <summary>
         /// Stop the running script (Ctrl+C)
         /// </summary>
-        private void StopScript()
+        private async void StopScript()
         {
             try
             {
-                _serialPort?.Write("\x03"); // Ctrl+C
+                if (_transport != null && _transport.IsConnected)
+                    await _transport.WriteAsync(new byte[] { 0x03 }); // Ctrl+C
             }
             catch (Exception ex)
             {

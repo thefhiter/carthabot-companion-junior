@@ -71,7 +71,7 @@
     <system:String x:Key="techincalDoc">Assembly Manual</system:String>
 
 
-    <system:String x:Key="flashModes">Flash preprogrammed modes to Rabot such as: Obstacle Avoider, Line Follower, Friendly, Obedient</system:String>
+    <system:String x:Key="flashModes">Flash preprogrammed modes to CarthaBot such as: Obstacle Avoider, Line Follower, Friendly, Obedient</system:String>
     <system:String x:Key="learnVisualProgramming">Learn Visual Programming: Launch a drag-and-drop programming interface (similar to Scratch)</system:String>
     <system:String x:Key="advancedPython">Advanced Python Programming: Launch a Python Notepad interface for advanced coding</system:String>
 
@@ -84,11 +84,99 @@
     <system:String x:Key="kidsRemoveTip">Tap to remove</system:String>
     <system:String x:Key="kidsTimes">times</system:String>
     <system:String x:Key="kidsPlay">Play</system:String>
+    <system:String x:Key="kidsStop">Stop</system:String>
     <system:String x:Key="kidsClear">Clear</system:String>
+
+    <!-- Kid-friendly connect screen (under-6) -->
+    <system:String x:Key="kidsConnTitle">Let's wake up CarthaBot!</system:String>
+    <system:String x:Key="kidsConnPlug">Plug in the cable</system:String>
+    <system:String x:Key="kidsConnTurnOn">Hold the button &amp; turn it on</system:String>
+    <system:String x:Key="kidsConnReadyStep">All ready!</system:String>
+    <system:String x:Key="kidsConnBack">Back</system:String>
+    <system:String x:Key="kidsConnSearching">Looking for your CarthaBot…</system:String>
+    <system:String x:Key="kidsConnFound">Found it! Getting ready… ✨</system:String>
+    <system:String x:Key="kidsConnReady">Ready! Let's play! 🎉</system:String>
 
     <!-- Coding (under 6) – VPL studio -->
     <system:String x:Key="vplCard">Coding (under 6)</system:String>
     <system:String x:Key="vplCardDesc">For children under 6: pair an event with an action — the visual way to make CarthaBot react.</system:String>
+
+    <!-- Draw with a pen – turtle plotter -->
+    <system:String x:Key="drawCard">Draw with a pen</system:String>
+    <system:String x:Key="drawCardDesc">Draw a picture or pick a shape, and CarthaBot traces it on paper with the pen in its hole.</system:String>
+
+    <!-- Draw studio (chrome) -->
+    <system:String x:Key="drawTitle">Draw with CarthaBot</system:String>
+    <system:String x:Key="drawConnect">🔗 Connect</system:String>
+    <system:String x:Key="drawPreview">👁 Preview</system:String>
+    <system:String x:Key="drawCodeBtn">&lt;/&gt; Code</system:String>
+    <system:String x:Key="drawSend">▶ Send to robot</system:String>
+    <system:String x:Key="drawStop">⏹ Stop</system:String>
+
+    <!-- Draw studio — Air draw (camera hand movement) -->
+    <system:String x:Key="drawAirBtn">✋ Draw with your hand</system:String>
+    <system:String x:Key="drawAirTitle">Air Draw — draw in the air!</system:String>
+    <system:String x:Key="drawAirLock">🎯 Lock on my hand</system:String>
+    <system:String x:Key="drawAirRelock">🔄 Re-lock</system:String>
+    <system:String x:Key="drawAirHold">✋ Hold to draw</system:String>
+    <system:String x:Key="drawAirAgain">↺ Try again</system:String>
+    <system:String x:Key="drawAirUse">✓ Use it</system:String>
+    <system:String x:Key="drawAirHintLock">Put your open hand in the green box, then press 🎯 Lock.</system:String>
+    <system:String x:Key="drawAirHintStart">Starting the camera…</system:String>
+    <system:String x:Key="drawAirHintReady">☝️ I can see your hand! Pinch your index finger and thumb together to draw — open them to stop. (Or hold the ✋ button.)</system:String>
+    <system:String x:Key="drawAirHintDrawing">✍️ Drawing! Keep your index finger and thumb pinched. Open them to lift the pen.</system:String>
+    <system:String x:Key="drawAirNoCam">No camera found. Plug in a webcam and try again.</system:String>
+    <system:String x:Key="drawAirTooSmall">That drawing was too small — try again with a bigger motion.</system:String>
+    <system:String x:Key="drawAirAdded">✋ Added your air drawing! Press ▶ to send it to CarthaBot.</system:String>
+
+    <system:String x:Key="drawStampShape">Stamp a shape</system:String>
+    <system:String x:Key="drawPenSection">Pen</system:String>
+    <system:String x:Key="drawUndo">↶  Undo last</system:String>
+    <system:String x:Key="drawClear">🗑  Clear all</system:String>
+    <system:String x:Key="drawSaveBtn">💾 Save</system:String>
+    <system:String x:Key="drawOpenBtn">📂 Open</system:String>
+    <system:String x:Key="drawWriteWord">Write a word</system:String>
+    <system:String x:Key="drawStampText">✍  Stamp text</system:String>
+    <system:String x:Key="drawPenNote">The pen is fixed down, so the robot draws everything in one line. Place CarthaBot on the paper facing UP (toward the top of the drawing) before you press Send.</system:String>
+    <system:String x:Key="drawSizeCalib">Before you draw</system:String>
+    <system:String x:Key="drawRobotFaces">Robot faces: </system:String>
+    <system:String x:Key="drawSizeLbl">How big on paper?</system:String>
+    <system:String x:Key="drawSizeSmall">Small</system:String>
+    <system:String x:Key="drawSizeMedium">Medium</system:String>
+    <system:String x:Key="drawSizeBig">Big</system:String>
+    <system:String x:Key="drawAutoNote">CarthaBot picks the best speed and smoothing all by itself — just draw and press ▶!</system:String>
+    <system:String x:Key="drawGrownUps">⚙ For grown-ups: one-time accuracy setup</system:String>
+    <system:String x:Key="drawTuneReal">Tune on real paper:</system:String>
+    <system:String x:Key="drawCalHint">After a test, tap what you saw — the app corrects itself. Repeat until spot on:</system:String>
+    <system:String x:Key="drawCalLineLong">📏 Line too long</system:String>
+    <system:String x:Key="drawCalLineShort">📏 Line too short</system:String>
+    <system:String x:Key="drawCalTurnFar">↻ Turned too far</system:String>
+    <system:String x:Key="drawCalTurnShort">↻ Not far enough</system:String>
+    <system:String x:Key="drawCalSaved">Saved! Run the same test again — repeat until it's spot on.</system:String>
+    <system:String x:Key="drawSpeedLbl">Speed: </system:String>
+    <system:String x:Key="drawTrackLbl">Wheel-to-wheel distance: </system:String>
+    <system:String x:Key="drawTuneNote">Calibrate the line first (📏) — turns follow automatically from the Speed and the wheel-to-wheel distance. If turns are still off, use the ↻ tap buttons. Best results when the pen sits near the centre of the two wheels.</system:String>
+    <system:String x:Key="drawCanvasHint">↑ top of the page = robot's forward direction</system:String>
+    <system:String x:Key="drawHelpTitle">✏️ How to draw with CarthaBot</system:String>
+    <system:String x:Key="drawHelp1">① Put the pen in CarthaBot's hole. Place it on the paper facing the TOP of the page (that's the robot's forward direction).</system:String>
+    <system:String x:Key="drawHelp2">② Sketch on the white canvas, stamp a shape, or type a word. Use 👁 Preview to see the exact line the robot will trace.</system:String>
+    <system:String x:Key="drawHelp3">③ Connect over USB or WiFi, then press ▶ Send to robot.</system:String>
+    <system:String x:Key="drawHelp4">First time? Ask a grown-up to open "⚙ For grown-ups" once: draw the 📏 100 mm test line and the ↻ 90° test turn so every drawing comes out just right.</system:String>
+    <system:String x:Key="drawHelpTip">Tip: the pen can't lift, so the whole drawing is one line — shapes and letters join with a thin link. Mount the pen near the centre of the two wheels for the cleanest corners.</system:String>
+    <system:String x:Key="drawGotIt">Got it!</system:String>
+    <system:String x:Key="drawEraseOff">🧽  Erase: off</system:String>
+    <system:String x:Key="drawEraseOn">🧽  Erase: ON</system:String>
+    <system:String x:Key="drawPreviewOn">👁 Preview ✓</system:String>
+    <system:String x:Key="drawConnYes">CarthaBot connected</system:String>
+    <system:String x:Key="drawConnNot">CarthaBot not connected</system:String>
+    <system:String x:Key="drawStatusStart">Draw something, or pick a shape — then press ▶ to send it to CarthaBot.</system:String>
+    <system:String x:Key="drawStPlug">Plug in CarthaBot (or join its WiFi) and press Connect.</system:String>
+    <system:String x:Key="drawStTooSmall">That drawing is too small to trace — make it bigger.</system:String>
+    <system:String x:Key="drawStDrawing">✏️ CarthaBot is drawing! ({0} moves, ~{1} cm of line, about {2} s)</system:String>
+    <system:String x:Key="drawStStopped">Stopped. The pen stays where it is.</system:String>
+    <system:String x:Key="drawStReady">CarthaBot connected. Ready to draw!</system:String>
+    <system:String x:Key="drawStConnFail">Couldn't connect — check the cable / WiFi and try again.</system:String>
+    <system:String x:Key="drawStBusy">Hang on — still sending the last one…</system:String>
 
     <!-- English -->
     <system:String x:Key="step1Title">Step 1</system:String>
@@ -101,8 +189,8 @@
     <system:String x:Key="step3Desc">Press the boot button (the one in the back) and while pressing, press on the reset button (the one on the left). Release the reset button first and then release the boot button.</system:String>
 
     <!-- VPL studio UI (Coding under 6) -->
-    <system:String x:Key="vplEventsTitle">Events</system:String>
-    <system:String x:Key="vplActionsTitle">Actions</system:String>
+    <system:String x:Key="vplEventsTitle">⚡ Events</system:String>
+    <system:String x:Key="vplActionsTitle">🎬 Actions</system:String>
     <system:String x:Key="vplCompiledOk">Compilation completed successfully</system:String>
     <system:String x:Key="vplEmptyTitle">Click an Event on the left to add your first rule</system:String>
     <system:String x:Key="vplEmptyHint">Then add an Action on the right — press ▶ to run it on CarthaBot</system:String>
@@ -154,7 +242,6 @@
     <system:String x:Key="vplTipCode">Show code</system:String>
     <system:String x:Key="vplTipInfo">About</system:String>
     <system:String x:Key="vplTipScreenshot">Screenshot</system:String>
-    <system:String x:Key="vplTipTheme">Switch light / dark</system:String>
     <system:String x:Key="vplTipHome">Back to menu</system:String>
     <system:String x:Key="vplAddAction">add</system:String>
 
@@ -186,6 +273,7 @@
     <system:String x:Key="vplTipAdvanced">Advanced mode — unlock Timer and Memory</system:String>
     <system:String x:Key="vplStAdvOn">Advanced mode — Timer and Memory unlocked ✨</system:String>
     <system:String x:Key="vplStAdvOff">Simple mode</system:String>
+    <system:String x:Key="vplStWifiFirst">First time on Wi-Fi — let's put CarthaBot on your network!</system:String>
 
     <!-- VPL sound card: the child's own tune -->
     <system:String x:Key="vplSoundMyTune">♫ My tune</system:String>
@@ -203,6 +291,13 @@
     <system:String x:Key="vplMissionsTitle">Missions</system:String>
     <system:String x:Key="vplMissionsHint">Build your rules first, then pick a mission and press the buttons!</system:String>
     <system:String x:Key="vplSimPad">CarthaBot's buttons</system:String>
+    <!-- clap event (PC microphone stands in for the robot's missing one) -->
+    <system:String x:Key="vplEvtClap">Clap! (microphone)</system:String>
+    <system:String x:Key="vplHdrClap">CLAP! 👏</system:String>
+    <system:String x:Key="vplClapWhen">When I hear a clap</system:String>
+    <system:String x:Key="vplClapTip">Clap your hands — CarthaBot is listening!</system:String>
+    <system:String x:Key="vplClapTipNoMic">No microphone — tap 👏 to clap!</system:String>
+    <system:String x:Key="vplClapBtn">Clap for CarthaBot</system:String>
     <system:String x:Key="vplSimFollow">Follow CarthaBot with the camera</system:String>
     <system:String x:Key="vplSimDisco">Disco mode — lights out!</system:String>
     <system:String x:Key="vplSimRealBtns">Press the buttons on the real CarthaBot</system:String>
@@ -210,6 +305,14 @@
     <system:String x:Key="vplSimLiveHint">The 3D robot moves with your real robot in real time</system:String>
     <system:String x:Key="vplTipLive">Live — run on CarthaBot and watch its 3D twin move</system:String>
     <system:String x:Key="vplStLive">Live! CarthaBot and its 3D twin are moving together 📡</system:String>
+    <!-- simulator maps -->
+    <system:String x:Key="vplMapClassic">Classic playground</system:String>
+    <system:String x:Key="vplMapAdventure">Adventure map</system:String>
+    <system:String x:Key="vplMapCity">City streets</system:String>
+    <system:String x:Key="vplMapGarden">Flower garden</system:String>
+    <system:String x:Key="vplMapSpace">Space orbit</system:String>
+    <system:String x:Key="vplMapOcean">Ocean islands</system:String>
+    <system:String x:Key="vplMapSnow">Snow land</system:String>
     <system:String x:Key="vplMisDone">Mission complete!</system:String>
     <system:String x:Key="vplMisDoneHint">CarthaBot is so proud of you!</system:String>
     <system:String x:Key="vplMisGlow">Light it up!</system:String>

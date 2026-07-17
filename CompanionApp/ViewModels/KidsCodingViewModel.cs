@@ -220,7 +220,8 @@ namespace CompanionApp.ViewModels
 
                 string code = GenerateMicroPython();
 
-                // Stop anything currently running, then stream the program in paste mode.
+                // Drain any leftover output, then stop anything running and stream in paste mode.
+                try { _serialPort.ReadExisting(); } catch { }
                 _serialPort.Write(new byte[] { 0x03 }, 0, 1); // Ctrl+C
                 await Task.Delay(80);
                 _serialPort.Write(new byte[] { 0x05 }, 0, 1); // Ctrl+E -> paste mode
@@ -231,9 +232,13 @@ namespace CompanionApp.ViewModels
 
                 _serialPort.Write(new byte[] { 0x04 }, 0, 1); // Ctrl+D -> execute
 
-                // Let the program run for roughly its own duration before re-enabling Play.
-                int estimated = 400 + Repeat * Program.Count * (StepMs + 250);
-                await Task.Delay(Math.Min(estimated, 15000));
+                // Let the program run; keep draining so the USB buffer never back-pressures.
+                int total = Math.Min(400 + Repeat * Program.Count * (StepMs + 250), 15000);
+                for (int waited = 0; waited < total; waited += 100)
+                {
+                    await Task.Delay(100);
+                    try { _serialPort.ReadExisting(); } catch { }
+                }
             }
             catch (Exception ex)
             {
@@ -267,26 +272,39 @@ namespace CompanionApp.ViewModels
             var sb = new StringBuilder();
             sb.AppendLine("import machine, neopixel, time");
             sb.AppendLine("SPEED = 150");
-            sb.AppendLine("m1_dir = machine.Pin(23, machine.Pin.OUT)");
-            sb.AppendLine("m2_dir = machine.Pin(24, machine.Pin.OUT)");
-            sb.AppendLine("m1_pwm = machine.PWM(machine.Pin(29)); m1_pwm.freq(1000)");
-            sb.AppendLine("m2_pwm = machine.PWM(machine.Pin(28)); m2_pwm.freq(1000)");
+            sb.AppendLine("# 2-input (L9110-style) H-bridge per wheel: PWM the active coil, hold");
+            sb.AppendLine("# the other at 0, so both wheels run at the same speed (M1=left 23/29,");
+            sb.AppendLine("# M2=right 24/28; forward = M1 via GP29, M2 via GP24).");
+            sb.AppendLine("# forward coils matched to this robot's wiring: left fwd=GP23, right fwd=GP24");
+            sb.AppendLine("m1_fwd = machine.PWM(machine.Pin(23)); m1_fwd.freq(1000)");
+            sb.AppendLine("m1_rev = machine.PWM(machine.Pin(29)); m1_rev.freq(1000)");
+            sb.AppendLine("m2_fwd = machine.PWM(machine.Pin(24)); m2_fwd.freq(1000)");
+            sb.AppendLine("m2_rev = machine.PWM(machine.Pin(28)); m2_rev.freq(1000)");
             sb.AppendLine("np = neopixel.NeoPixel(machine.Pin(21), 11)");
             sb.AppendLine("spk = machine.PWM(machine.Pin(20)); spk.duty_u16(0)");
-            sb.AppendLine("def _duty(v): return int(v * 65535 // 255)");
-            sb.AppendLine("def stop():");
-            sb.AppendLine("    m1_pwm.duty_u16(0); m2_pwm.duty_u16(0)");
-            sb.AppendLine("    m1_dir.value(0); m2_dir.value(0)");
-            sb.AppendLine("def _drive(d1, d2, ms):");
-            sb.AppendLine("    m1_dir.value(d1); m1_pwm.duty_u16(_duty(SPEED))");
-            sb.AppendLine("    m2_dir.value(d2); m2_pwm.duty_u16(_duty(SPEED))");
-            sb.AppendLine("    time.sleep_ms(ms); stop(); time.sleep_ms(200)");
-            sb.AppendLine($"def forward(): _drive(0, 1, {StepMs})");
-            sb.AppendLine($"def backward(): _drive(1, 0, {StepMs})");
-            sb.AppendLine($"def left(): _drive(1, 1, {StepMs})");
-            sb.AppendLine($"def right(): _drive(0, 0, {StepMs})");
+            sb.AppendLine("def _duty(v):");
+            sb.AppendLine("    if v < 0: v = 0");
+            sb.AppendLine("    if v > 255: v = 255");
+            sb.AppendLine("    return int(v * 65535 // 255)");
+            sb.AppendLine("def _motors(l, r):");
+            sb.AppendLine("    if l >= 0:");
+            sb.AppendLine("        m1_fwd.duty_u16(_duty(l)); m1_rev.duty_u16(0)");
+            sb.AppendLine("    else:");
+            sb.AppendLine("        m1_fwd.duty_u16(0); m1_rev.duty_u16(_duty(-l))");
+            sb.AppendLine("    if r >= 0:");
+            sb.AppendLine("        m2_fwd.duty_u16(_duty(r)); m2_rev.duty_u16(0)");
+            sb.AppendLine("    else:");
+            sb.AppendLine("        m2_fwd.duty_u16(0); m2_rev.duty_u16(_duty(-r))");
+            sb.AppendLine("def stop(): _motors(0, 0)");
+            sb.AppendLine("def _drive(l, r, ms):");
+            sb.AppendLine("    _motors(l, r); time.sleep_ms(ms); stop(); time.sleep_ms(200)");
+            sb.AppendLine($"def forward(): _drive(SPEED, SPEED, {StepMs})");
+            sb.AppendLine($"def backward(): _drive(-SPEED, -SPEED, {StepMs})");
+            sb.AppendLine($"def left(): _drive(-SPEED, SPEED, {StepMs})");
+            sb.AppendLine($"def right(): _drive(SPEED, -SPEED, {StepMs})");
+            sb.AppendLine("BRIGHT = 60  # LED brightness cap (0-255): lower = far less current, prevents brown-out/power-off");
             sb.AppendLine("def lights(r, g, b):");
-            sb.AppendLine("    for i in range(11): np[i] = (r, g, b)");
+            sb.AppendLine("    for i in range(11): np[i] = (r*BRIGHT//255, g*BRIGHT//255, b*BRIGHT//255)");
             sb.AppendLine("    np.write()");
             sb.AppendLine("def rainbow():");
             sb.AppendLine("    cols = [(255,0,0),(255,120,0),(255,255,0),(0,200,0),(0,80,255),(150,0,255)]");

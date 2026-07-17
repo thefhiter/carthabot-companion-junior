@@ -286,6 +286,72 @@
                         </Grid>
                     </Border>
 
+                    <!-- Draw with a pen – turtle plotter -->
+                    <Border Cursor="Hand" Margin="5" VerticalAlignment="Stretch">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#414c50"/>
+                                <Setter Property="Effect" Value="{x:Null}"/>
+                                <Setter Property="BorderBrush" Value="DarkGray"/>
+                                <Setter Property="BorderThickness" Value="3"/>
+                                <Setter Property="CornerRadius" Value="15"/>
+                                <Setter Property="Width" Value="250"/>
+                                <Setter Property="Height" Value="250"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Atelier[5].OnHovered}" Value="true">
+                                        <Setter Property="BorderBrush" Value="{Binding Atelier[5].Color}"/>
+                                        <Setter Property="BorderThickness" Value="3"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="MouseLeftButtonDown">
+                                <i:InvokeCommandAction Command="{Binding Atelier[5].SelectedCommand}"/>
+                            </i:EventTrigger>
+                            <i:EventTrigger EventName="MouseEnter">
+                                <i:InvokeCommandAction Command="{Binding Atelier[5].BorderHoverCommand}"/>
+                            </i:EventTrigger>
+                            <i:EventTrigger EventName="MouseLeave">
+                                <i:InvokeCommandAction Command="{Binding Atelier[5].BorderLeaveCommand}"/>
+                            </i:EventTrigger>
+                        </i:Interaction.Triggers>
+
+                        <!-- Content -->
+                        <Grid Margin="10 20 10 10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="1*"/>
+                                <RowDefinition Height="1*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="✏️" FontFamily="Segoe UI Emoji" FontSize="58" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                                           FontWeight="DemiBold"
+                                           TextWrapping="Wrap"
+                                           TextAlignment="Left"
+                                           FontSize="20"
+                                           Text="{DynamicResource drawCard}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Left">
+                            </TextBlock>
+
+                            <TextBlock Grid.Row="2" Grid.ColumnSpan="2" VerticalAlignment="Center"
+                                           FontWeight="Normal"
+                                           TextWrapping="Wrap"
+                                           FontSize="14"
+                                           Text="{DynamicResource drawCardDesc}"
+                                           >
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+
                 </WrapPanel>
             </ScrollViewer>
         </Border>
