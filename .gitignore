@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# 3D model meshes for the VPL simulator are content, not C++ compiler output
+!CompanionApp/Vpl/Assets/*.obj
+
