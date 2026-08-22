@@ -6,8 +6,9 @@ namespace CarthaBotVPL.Services
 {
     /// <summary>
     /// Listens to the PC microphone and raises <see cref="Clapped"/> when it hears a hand clap —
-    /// the desktop stand-in for a robot microphone (the CarthaBot has none), so the 👏 event
-    /// tile feels magical in the 3D playground: clap your hands, the virtual robot reacts.
+    /// the desktop stand-in used by the 3D playground, so the 👏 event tile feels magical there:
+    /// clap your hands, the virtual robot reacts. (On the real robot the compiled program listens
+    /// on the CarthaBot's own MIC400 microphone, GP27/ADC1 — see VplCompiler.)
     ///
     ///  * raw winmm waveIn via P/Invoke — no NuGet dependency, works wherever WPF does;
     ///  * 16 kHz / 16-bit mono in 20 ms buffers;

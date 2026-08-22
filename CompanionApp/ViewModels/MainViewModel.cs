@@ -475,7 +475,17 @@ namespace CompanionApp.ViewModels
                     break;
             }
 
-            // Every module — including the under-6 VPL — uses the same USB / WiFi chooser.
+            // The Behaviours module flashes its own Modes.uf2 firmware, which can ONLY happen
+            // over USB — showing a WiFi option there was misleading (it was silently forced to
+            // USB anyway), so skip the chooser and go straight to the plug-in / flash wizard.
+            if (obj == Module.Behaviour)
+            {
+                ShowPlugInAnimation = true;
+                dispatcherTimer.Start();
+                return;
+            }
+
+            // Every other module — including the under-6 VPL — uses the USB / WiFi chooser.
             // (The old kid-friendly "Let's wake up CarthaBot!" connect screen is disabled.)
             ShowConnectionChooser = true;
 

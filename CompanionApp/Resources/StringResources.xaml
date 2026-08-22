@@ -305,6 +305,14 @@
     <system:String x:Key="vplSimLiveHint">The 3D robot moves with your real robot in real time</system:String>
     <system:String x:Key="vplTipLive">Live — run on CarthaBot and watch its 3D twin move</system:String>
     <system:String x:Key="vplStLive">Live! CarthaBot and its 3D twin are moving together 📡</system:String>
+    <!-- microphone test -->
+    <system:String x:Key="vplTipMicTest">Microphone test — see what CarthaBot hears</system:String>
+    <system:String x:Key="vplMicTitle">Microphone test</system:String>
+    <system:String x:Key="vplMicWaiting">Waking up CarthaBot's microphone…</system:String>
+    <system:String x:Key="vplMicHint">Clap your hands or talk near CarthaBot — the bar shows what it hears!</system:String>
+    <system:String x:Key="vplMicFail">Couldn't reach CarthaBot — plug it in (or connect) and try again.</system:String>
+    <system:String x:Key="vplMicClaps">claps heard</system:String>
+    <system:String x:Key="vplStMicTest">Microphone test — clap your hands! 🎤</system:String>
     <!-- simulator maps -->
     <system:String x:Key="vplMapClassic">Classic playground</system:String>
     <system:String x:Key="vplMapAdventure">Adventure map</system:String>

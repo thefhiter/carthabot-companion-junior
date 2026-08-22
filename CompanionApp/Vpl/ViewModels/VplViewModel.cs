@@ -233,23 +233,29 @@ namespace CarthaBotVPL.ViewModels
 
             try
             {
-                byte[] payload = Encoding.ASCII.GetBytes(code.Replace("\r\n", "\n") + "\n");
-                // Recover the link: a back-pressured bridge only unblocks once we READ; drain + Ctrl-C
-                // repeatedly so the interrupt lands and the next program isn't ignored.
-                for (int k = 0; k < 3; k++)
-                {
-                    try { _transport.ReadExisting(); } catch { }
-                    await _transport.WriteAsync(new byte[] { 0x03 }); // Ctrl-C
-                    await Task.Delay(60);
-                }
-                try { _transport.ReadExisting(); } catch { }
-                await _transport.WriteAsync(new byte[] { 0x05 }); // Ctrl-E -> paste mode
-                await Task.Delay(80);
-                await _transport.WriteAsync(payload);
-                await _transport.WriteAsync(new byte[] { 0x04 }); // Ctrl-D -> run
+                await StreamProgramAsync(code);
                 Status = L("vplStRunning", "CarthaBot is running your program ▶");
             }
             catch (Exception ex) { Status = "Oops, try again"; System.Diagnostics.Debug.WriteLine(ex.Message); }
+        }
+
+        /// <summary>Drain + interrupt the link, then paste-mode-stream <paramref name="code"/> and run it.
+        /// Recover the link first: a back-pressured bridge only unblocks once we READ, so drain +
+        /// Ctrl-C a few times so the interrupt lands and the previous program really stops.</summary>
+        private async Task StreamProgramAsync(string code)
+        {
+            byte[] payload = Encoding.ASCII.GetBytes(code.Replace("\r\n", "\n") + "\n");
+            for (int k = 0; k < 3; k++)
+            {
+                try { _transport.ReadExisting(); } catch { }
+                await _transport.WriteAsync(new byte[] { 0x03 }); // Ctrl-C
+                await Task.Delay(60);
+            }
+            try { _transport.ReadExisting(); } catch { }
+            await _transport.WriteAsync(new byte[] { 0x05 }); // Ctrl-E -> paste mode
+            await Task.Delay(80);
+            await _transport.WriteAsync(payload);
+            await _transport.WriteAsync(new byte[] { 0x04 }); // Ctrl-D -> run
         }
 
         /// <summary>Run on the real robot AND mirror it live in the 3D twin: compile with
@@ -265,21 +271,7 @@ namespace CarthaBotVPL.ViewModels
             try
             {
                 StopReader();
-                byte[] payload = Encoding.ASCII.GetBytes(GeneratedCode.Replace("\r\n", "\n") + "\n");
-                // Recover the link first: a back-pressured bridge only unblocks once we READ, so
-                // drain + Ctrl-C a few times so the interrupt lands and the previous program really
-                // stops before we paste the new one (same fix as the plain ▶ path).
-                for (int k = 0; k < 3; k++)
-                {
-                    try { _transport.ReadExisting(); } catch { }
-                    await _transport.WriteAsync(new byte[] { 0x03 }); // Ctrl-C
-                    await Task.Delay(60);
-                }
-                try { _transport.ReadExisting(); } catch { }
-                await _transport.WriteAsync(new byte[] { 0x05 }); // Ctrl-E -> paste mode
-                await Task.Delay(80);
-                await _transport.WriteAsync(payload);
-                await _transport.WriteAsync(new byte[] { 0x04 }); // Ctrl-D -> run
+                await StreamProgramAsync(GeneratedCode);
                 StartReader();
                 Status = L("vplStLive", "Live! CarthaBot and its 3D twin are moving together 📡");
             }
@@ -332,7 +324,19 @@ namespace CarthaBotVPL.ViewModels
 
         private void ParseTelemetry(string line)
         {
-            if (string.IsNullOrEmpty(line) || line[0] != 'T') return;
+            if (string.IsNullOrEmpty(line)) return;
+            // mic-test packets: "M,span,floor,clap" (TryParse rejects any REPL noise)
+            if (line.StartsWith("M,"))
+            {
+                var mp = line.Split(',');
+                if (mp.Length >= 4 &&
+                    int.TryParse(mp[1], out int span) &&
+                    int.TryParse(mp[2], out int floor) &&
+                    int.TryParse(mp[3], out int clap))
+                    MicSampleReceived?.Invoke(span, floor, clap == 1);
+                return;
+            }
+            if (line[0] != 'T') return;
             var parts = line.Split(',');
             if (parts.Length < 9) return;
             // first 8 fields are the core state; any extra fields (e.g. raw sensor
@@ -349,6 +353,63 @@ namespace CarthaBotVPL.ViewModels
             try { if (_transport != null) _ = _transport.WriteAsync(new byte[] { 0x03 }); } catch { }
             Status = L("vplStStopped", "Stopped");
         }
+
+        // ---- 🎤 microphone test: run a tiny sampler on the robot and watch it hear ----
+
+        /// <summary>Raised on a background thread with one mic-test packet while the
+        /// microphone test runs: (span, floor, clap) — the burst's peak-to-peak loudness,
+        /// the rolling ambient floor, and whether that burst was a clap.</summary>
+        public event Action<int, int, bool> MicSampleReceived;
+
+        /// <summary>The MicroPython the mic test streams: sample the CarthaBot's MIC400
+        /// electret microphone (GP27/ADC1) in short bursts and print "M,span,floor,clap"
+        /// ~25×/s — the same detector the compiled 👏 rules use.</summary>
+        private const string MicTestProgram =
+"# === CarthaBot microphone test ===\n" +
+"import machine, time\n" +
+"mic = machine.ADC(27)\n" +
+"def span():\n" +
+"    lo = 65535; hi = 0\n" +
+"    for _ in range(120):\n" +
+"        v = mic.read_u16()\n" +
+"        if v < lo: lo = v\n" +
+"        if v > hi: hi = v\n" +
+"    return hi - lo\n" +
+"floor = max(300, span())\n" +
+"last = 0\n" +
+"while True:\n" +
+"    s = span()\n" +
+"    now = time.ticks_ms()\n" +
+"    clap = 0\n" +
+"    if s > floor * 4 and s > 6000 and time.ticks_diff(now, last) > 400:\n" +
+"        clap = 1; last = now\n" +
+"    else:\n" +
+"        floor = (floor * 15 + s) // 16\n" +
+"        if floor < 300: floor = 300\n" +
+"    print('M,%d,%d,%d' % (s, floor, clap))\n" +
+"    time.sleep_ms(30)\n";
+
+        /// <summary>Start the microphone test on the robot. False = couldn't connect/stream.</summary>
+        public async Task<bool> StartMicTestAsync()
+        {
+            if (!await EnsureConnectedAsync()) { Status = L("vplStPlug", "Plug in CarthaBot and turn it on"); return false; }
+            try
+            {
+                StopReader();
+                await StreamProgramAsync(MicTestProgram);
+                StartReader();
+                Status = L("vplStMicTest", "Microphone test — clap your hands! 🎤");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Status = "Oops, try again";
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+                return false;
+            }
+        }
+
+        public void StopMicTest() => Stop();
 
         #region connection (USB / WiFi)
 
