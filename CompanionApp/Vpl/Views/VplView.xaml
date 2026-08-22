@@ -618,6 +618,8 @@
                         <Button x:Name="StopBtn" Style="{StaticResource RoundButton}" Background="{StaticResource Red}" Command="{Binding StopCommand}" Click="OnStopSim" ToolTip="{DynamicResource vplTipStop}"><TextBlock Text="■" FontSize="17" /></Button>
                         <!-- Live: run on the real robot AND mirror it in the 3D twin -->
                         <Button x:Name="LiveBtn" Style="{StaticResource RoundButton}" Width="44" Height="44" Background="#C0392B" Command="{Binding PlayLiveCommand}" Click="OnPlayLive" ToolTip="{DynamicResource vplTipLive}"><TextBlock Text="📡" FontSize="17" /></Button>
+                        <!-- Microphone test: the robot samples its own mic (GP27) and the app shows what it hears -->
+                        <Button x:Name="MicTestBtn" Style="{StaticResource RoundButton}" Width="44" Height="44" Background="#8E44AD" Click="OnMicTest" ToolTip="{DynamicResource vplTipMicTest}"><TextBlock Text="🎤" FontSize="17" /></Button>
                         <!-- Connect: choose USB / WiFi -->
                         <Grid>
                             <Button x:Name="VplConnectBtn" Style="{StaticResource RoundButton}" Width="44" Height="44"
@@ -1057,6 +1059,48 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Border>
+
+                <!-- 🎤 MICROPHONE TEST OVERLAY: live level + clap counter from the real robot -->
+                <Border x:Name="MicOverlay" Grid.ColumnSpan="3" Background="#CC0E1418" Visibility="Collapsed">
+                    <Border Background="{DynamicResource VplToolbar}" CornerRadius="12" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            BorderBrush="#8E44AD" BorderThickness="1" MinWidth="520" MaxWidth="620">
+                        <Grid Margin="18">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🎤" FontSize="20" VerticalAlignment="Center" Margin="0 0 8 0" />
+                                    <TextBlock Text="{DynamicResource vplMicTitle}" Foreground="#C39BD3" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Button Content="{DynamicResource vplCloseBtn}" HorizontalAlignment="Right" Padding="14 6" Cursor="Hand" Foreground="White" Background="{StaticResource ActionBlue}" BorderThickness="0" Click="OnCloseMicTest" />
+                            </Grid>
+                            <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0 14 0 6">
+                                <TextBlock Text="🎤" FontSize="52" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <TextBlock.RenderTransform><ScaleTransform x:Name="MicGlyphScale" ScaleX="1" ScaleY="1" /></TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock x:Name="MicStatusText" Text="" Foreground="{DynamicResource VplTextDim}" FontSize="13" HorizontalAlignment="Center" Margin="0 10 0 0" TextWrapping="Wrap" MaxWidth="440" TextAlignment="Center" />
+                                <!-- level bar: what the robot's microphone hears right now -->
+                                <Border Width="440" Height="26" CornerRadius="13" Background="#1B2732" BorderBrush="#3C4C5C" BorderThickness="1" Margin="0 16 0 0" ClipToBounds="True">
+                                    <Border x:Name="MicLevelFill" Width="0" Height="26" HorizontalAlignment="Left" CornerRadius="13">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                <GradientStop Color="#27AE60" Offset="0" />
+                                                <GradientStop Color="#F1C40F" Offset="0.6" />
+                                                <GradientStop Color="#E74C3C" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                    </Border>
+                                </Border>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 18 0 0">
+                                    <TextBlock Text="👏" FontSize="26" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                        <TextBlock.RenderTransform><ScaleTransform x:Name="MicClapScale" ScaleX="1" ScaleY="1" /></TextBlock.RenderTransform>
+                                    </TextBlock>
+                                    <TextBlock x:Name="MicClapCount" Text="0" Foreground="{DynamicResource VplText}" FontSize="24" FontWeight="Bold" VerticalAlignment="Center" Margin="10 0 8 0" />
+                                    <TextBlock Text="{DynamicResource vplMicClaps}" Foreground="{DynamicResource VplTextDim}" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </StackPanel>
                         </Grid>
                     </Border>
                 </Border>

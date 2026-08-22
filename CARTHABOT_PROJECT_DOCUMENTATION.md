@@ -5,7 +5,7 @@
 > the VPL compiler / simulator / live digital twin, the 3D-model pipeline, and the full
 > file/asset reference.
 >
-> **Author of this build work:** Claude (assistant), for the user (FAB619 / aiautomation).
+> **Author:** Youssef (FAB619 / aiautomation).
 > **Last consolidated:** 2026-06-19.
 > **Canonical shipped app:** *CarthaBot Companion Junior* (`CompanionApp`), version **v2.0**.
 

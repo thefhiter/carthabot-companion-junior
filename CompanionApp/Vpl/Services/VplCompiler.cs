@@ -16,6 +16,8 @@ namespace CarthaBotVPL.Services
     ///   Speaker         : GP20
     ///   Buttons         : Forward=GP7, Down=GP17, Left=GP18, Right=GP19, Center=GP22 (active-high)
     ///   IR sensors      : not defined in the public firmware → exposed as editable constants.
+    ///   Microphone      : GP27 / ADC1 (MIC400 electret; traced in the CARTHBOT V2.0.2 schematic:
+    ///                     IR-sensors sheet "Micro" port → GPIO_27|ADC1; the thermistor is ADC 26).
     ///
     /// Semantics mirror Thymio VPL: actuator outputs are *latched* (a Move/Color keeps its value
     /// until another rule changes it), and rules are evaluated every loop ("when event → set outputs").
@@ -57,6 +59,8 @@ namespace CarthaBotVPL.Services
             // "follow the line" drive mode (latched, steered every pass by the ground sensor)
             bool usesFollow = list.Any(r => r.Actions.Any(
                 a => a.Kind == ActionKind.Move && a.Move == MoveDir.FollowLine));
+            // 👏 rules listen on the robot's own microphone (MIC400 electret on GP27/ADC1)
+            bool usesClap = list.Any(r => r.Event.Kind == EventKind.Clap);
 
             var sb = new StringBuilder();
 
@@ -98,6 +102,37 @@ namespace CarthaBotVPL.Services
             sb.AppendLine("def on_line():");
             sb.AppendLine("    return ir_gl.value() or ir_gr.value()");
             sb.AppendLine();
+
+            if (usesClap)
+            {
+                sb.AppendLine("# Microphone — MIC400 electret on GP27/ADC1 (schematic: 'Micro' port).");
+                sb.AppendLine("# A clap is a sharp transient: the peak-to-peak span of a short sample");
+                sb.AppendLine("# burst jumps far above the rolling ambient floor, then a refractory");
+                sb.AppendLine("# window makes one clap fire exactly once.");
+                sb.AppendLine("mic = machine.ADC(27)");
+                sb.AppendLine("def _mic_span():");
+                sb.AppendLine("    lo = 65535; hi = 0");
+                sb.AppendLine("    for _ in range(60):");
+                sb.AppendLine("        v = mic.read_u16()");
+                sb.AppendLine("        if v < lo: lo = v");
+                sb.AppendLine("        if v > hi: hi = v");
+                sb.AppendLine("    return hi - lo");
+                sb.AppendLine("_mic_floor = max(300, _mic_span())   # ambient loudness at startup");
+                sb.AppendLine("_clap_last = 0");
+                sb.AppendLine("clap_fired = False");
+                sb.AppendLine("def mic_tick():");
+                sb.AppendLine("    global _mic_floor, _clap_last, clap_fired");
+                sb.AppendLine("    clap_fired = False");
+                sb.AppendLine("    _s = _mic_span()");
+                sb.AppendLine("    _now = time.ticks_ms()");
+                sb.AppendLine("    if _s > _mic_floor * 4 and _s > 6000 and time.ticks_diff(_now, _clap_last) > 400:");
+                sb.AppendLine("        clap_fired = True; _clap_last = _now");
+                sb.AppendLine("    else:");
+                sb.AppendLine("        # only quiet passes feed the floor, so claps don't raise it");
+                sb.AppendLine("        _mic_floor = (_mic_floor * 15 + _s) // 16");
+                sb.AppendLine("        if _mic_floor < 300: _mic_floor = 300");
+                sb.AppendLine();
+            }
             sb.AppendLine("def _duty(v):");
             sb.AppendLine("    if v < 0: v = 0");
             sb.AppendLine("    if v > 255: v = 255");
@@ -278,14 +313,12 @@ namespace CarthaBotVPL.Services
                     sb.AppendLine("    if timer_deadline is not None and time.ticks_diff(time.ticks_ms(), timer_deadline) >= 0:");
                     sb.AppendLine("        timer_fired = True; timer_deadline = None");
                 }
+                if (usesClap)
+                    sb.AppendLine("    mic_tick()   # listen for a clap on the robot's microphone");
                 if (usesHoldDrive)
                     sb.AppendLine("    btn_drive = False");
                 foreach (var r in loopRules)
                 {
-                    // the robot has no microphone: 👏 rules run in the 3D playground only,
-                    // so they compile to a rule that never fires (kept visible for the kids)
-                    if (r.Event.Kind == EventKind.Clap)
-                        sb.AppendLine("    # clap rule — works in the 3D playground (the robot has no microphone)");
                     sb.AppendLine($"    if {Condition(r.Event, usesState)}:");
                     if (r.Actions.Count == 0)
                     {
@@ -367,8 +400,8 @@ namespace CarthaBotVPL.Services
                     cond = "timer_fired";
                     break;
                 case EventKind.Clap:
-                    // no microphone on the hardware — never true on the real robot
-                    cond = "False";
+                    // one-shot set by mic_tick() from the robot's own microphone (GP27/ADC1)
+                    cond = "clap_fired";
                     break;
                 default:
                     cond = "True";

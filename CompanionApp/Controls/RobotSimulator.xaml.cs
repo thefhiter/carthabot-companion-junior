@@ -85,7 +85,8 @@ namespace CompanionApp.Controls
         private readonly Stopwatch _clock = new Stopwatch();
         private TimeSpan _lastTick;
 
-        // 👏 clap event: the PC microphone stands in for the robot's missing one
+        // 👏 clap event: the PC microphone stands in for the robot's (which the real
+        // robot uses itself when a compiled program runs — MIC400 on GP27/ADC1)
         private ClapDetector _clapDetector;
         private bool _hasClapRule;
 
@@ -515,7 +516,8 @@ namespace CompanionApp.Controls
             MissionHint.Text = L("vplSimLiveHint", "The 3D robot moves with your real robot in real time");
             MissionStar.Visibility = Visibility.Collapsed;
 
-            // live mode mirrors the real robot, which has no microphone — no clap tip
+            // live mode: the REAL robot listens with its own microphone (GP27/ADC1) and
+            // runs its clap rules itself — the PC mic must not inject a second clap
             _hasClapRule = false;
             StopClapListening();
 

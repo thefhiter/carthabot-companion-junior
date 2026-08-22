@@ -24,7 +24,7 @@ namespace CompanionApp.Service
         {
             string version = "";
 
-            string iniFilePath = System.IO.Path.Combine("Resources", "Settings.ini");
+            string iniFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "Settings.ini");
 
             IniFile iniFile = new IniFile(iniFilePath);
 
@@ -43,7 +43,7 @@ namespace CompanionApp.Service
         {
             string version = "";
 
-            string iniFilePath = System.IO.Path.Combine("Resources", "Settings.ini");
+            string iniFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "Settings.ini");
 
             IniFile iniFile = new IniFile(iniFilePath);
 
@@ -60,7 +60,7 @@ namespace CompanionApp.Service
         }
         public static void UpdateLanguage(string newLng)
         {
-            string iniFilePath = System.IO.Path.Combine("Resources", "Settings.ini");
+            string iniFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "Settings.ini");
             IniFile iniFile = new IniFile(iniFilePath);
 
             try
@@ -78,7 +78,7 @@ namespace CompanionApp.Service
         {
             string githuburl = "";
 
-            string iniFilePath = System.IO.Path.Combine("Resources", "Settings.ini");
+            string iniFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "Settings.ini");
 
             IniFile iniFile = new IniFile(iniFilePath);
 
@@ -98,7 +98,7 @@ namespace CompanionApp.Service
         {
             string siteUrl = "";
 
-            string iniFilePath = System.IO.Path.Combine("Resources", "Settings.ini");
+            string iniFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "Settings.ini");
 
             IniFile iniFile = new IniFile(iniFilePath);
 

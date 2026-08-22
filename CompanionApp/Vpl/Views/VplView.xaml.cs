@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using CarthaBotVPL.Models;
 using CarthaBotVPL.Services;
@@ -35,6 +36,56 @@ namespace CarthaBotVPL.Views
             // telemetry arrives on a background thread → marshal to the UI then feed the twin
             vm.TelemetryReceived += v =>
                 Dispatcher.BeginInvoke(new Action(() => Sim.FeedTelemetry(v)));
+            // mic-test packets too: (span, floor, clap) from the robot's own microphone
+            vm.MicSampleReceived += (s, f, c) =>
+                Dispatcher.BeginInvoke(new Action(() => OnMicSample(s, f, c)));
+        }
+
+        /// <summary>Look up a localized string from the app-level resource dictionaries.</summary>
+        private static string L(string key, string fallback) =>
+            Application.Current?.TryFindResource(key) as string ?? fallback;
+
+        // ===== 🎤 microphone test: the robot samples its own mic and the app shows it =====
+        private int _micClaps;
+
+        private async void OnMicTest(object sender, RoutedEventArgs e)
+        {
+            if (!(DataContext is VplViewModel vm)) return;
+            _micClaps = 0;
+            MicClapCount.Text = "0";
+            MicLevelFill.Width = 0;
+            MicStatusText.Text = L("vplMicWaiting", "Waking up CarthaBot's microphone…");
+            MicOverlay.Visibility = Visibility.Visible;
+
+            bool ok = await vm.StartMicTestAsync();
+            MicStatusText.Text = ok
+                ? L("vplMicHint", "Clap your hands or talk near CarthaBot — the bar shows what it hears!")
+                : L("vplMicFail", "Couldn't reach CarthaBot — plug it in (or connect) and try again.");
+        }
+
+        private void OnCloseMicTest(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is VplViewModel vm) vm.StopMicTest();
+            MicOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void OnMicSample(int span, int floor, bool clap)
+        {
+            if (MicOverlay.Visibility != Visibility.Visible) return;
+            // 440-wide bar; a solid clap (~12000 peak-to-peak ADC counts) fills it
+            MicLevelFill.Width = Math.Min(440.0, span * 440.0 / 12000.0);
+            MicGlyphScale.ScaleX = MicGlyphScale.ScaleY = 1 + Math.Min(0.35, span / 30000.0);
+            if (!clap) return;
+
+            _micClaps++;
+            MicClapCount.Text = _micClaps.ToString();
+            UiSounds.Blip();
+            var pop = new DoubleAnimationUsingKeyFrames();
+            pop.KeyFrames.Add(new EasingDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            pop.KeyFrames.Add(new EasingDoubleKeyFrame(1.55, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.09)), new SineEase { EasingMode = EasingMode.EaseOut }));
+            pop.KeyFrames.Add(new EasingDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.3)), new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.6 }));
+            MicClapScale.BeginAnimation(ScaleTransform.ScaleXProperty, pop);
+            MicClapScale.BeginAnimation(ScaleTransform.ScaleYProperty, pop);
         }
 
         // ===== Live: run on the real robot and mirror it in the 3D twin =====
